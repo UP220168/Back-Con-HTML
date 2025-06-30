@@ -46,6 +46,11 @@ class MovieResponse(MovieBase):
     class Config:
         from_attributes = True
 
+# Modelo principal (alias de MovieResponse)
+class Movie(MovieResponse):
+    class Config:
+        from_attributes = True
+
 # Modelo simple para listas
 class MovieSummary(BaseModel):
     mov_id: str

@@ -4,7 +4,7 @@ from models.auditorium import AuditoriumCreate, AuditoriumUpdate, AuditoriumResp
 from services.auditorium_service import auditorium_service
 
 # Crear router
-router = APIRouter()
+router = APIRouter(tags=["auditoriums"])
 
 # GET /api/auditoriums/ - Listar auditorios
 @router.get("/", response_model=dict)

@@ -4,7 +4,7 @@ from models.movie import MovieCreate, MovieUpdate, MovieResponse, MovieSummary, 
 from services.movie_service import movie_service
 
 # Crear router
-router = APIRouter()
+router = APIRouter(tags=["movies"])
 
 # Datos simulados para probar (después conectarás con DB)
 # Eliminados para usar service y repository reales

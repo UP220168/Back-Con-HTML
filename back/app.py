@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     print("🔴 Cerrando aplicación...")
 
 # Importar routers
-from routers import movies, auditoriums
+from routers import movies, auditoriums, users, employees, screenings, tickets, sales
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -54,8 +54,13 @@ app.add_middleware(
 )
 
 # Registrar routers
-app.include_router(movies.router, prefix="/api/movies", tags=["Movies"])
-app.include_router(auditoriums.router, prefix="/api/auditoriums", tags=["Auditoriums"])
+app.include_router(movies.router, prefix="/api/movies")
+app.include_router(auditoriums.router, prefix="/api/auditoriums")
+app.include_router(users.router, prefix="/api/users")
+app.include_router(employees.router, prefix="/api/employees")
+app.include_router(screenings.router, prefix="/api/screenings")
+app.include_router(tickets.router, prefix="/api/tickets")
+app.include_router(sales.router, prefix="/api/sales")
 
 # Ruta básica
 @app.get("/")
@@ -67,6 +72,12 @@ async def read_root():
         "docs": "/docs",
         "endpoints": {
             "movies": "/api/movies/",
+            "auditoriums": "/api/auditoriums/",
+            "users": "/api/users/",
+            "employees": "/api/employees/",
+            "screenings": "/api/screenings/",
+            "tickets": "/api/tickets/",
+            "sales": "/api/sales/",
             "health": "/health"
         }
     }

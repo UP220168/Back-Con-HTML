@@ -19,7 +19,7 @@ class UserRepository:
         """Verificar contraseña contra hash"""
         return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
     
-    async def get_all(self, skip: int = 0, limit: int = 100, status: str = None) -> List[Dict[str, Any]]:
+    def get_all(self, skip: int = 0, limit: int = 100, status: str = None) -> List[Dict[str, Any]]:
         """Obtener todos los usuarios con paginación"""
         try:
             base_query = """
@@ -40,7 +40,7 @@ class UserRepository:
         except Exception as e:
             raise Exception(f"Error getting users: {str(e)}")
     
-    async def get_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Obtener usuario por ID (sin contraseña)"""
         try:
             query = """
@@ -54,7 +54,7 @@ class UserRepository:
         except Exception as e:
             raise Exception(f"Error getting user by ID: {str(e)}")
     
-    async def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+    def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Obtener usuario por email (con contraseña para autenticación)"""
         try:
             query = """
@@ -68,7 +68,7 @@ class UserRepository:
         except Exception as e:
             raise Exception(f"Error getting user by email: {str(e)}")
     
-    async def create(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+    def create(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Crear nuevo usuario"""
         try:
             user_id = str(uuid.uuid4())
@@ -96,18 +96,18 @@ class UserRepository:
             ))
             
             # Devolver el usuario creado (sin contraseña)
-            return await self.get_by_id(user_id)
+            return self.get_by_id(user_id)
             
         except Exception as e:
             if "Duplicate entry" in str(e) and "usr_email" in str(e):
                 raise Exception("El email ya está registrado")
             raise Exception(f"Error creating user: {str(e)}")
     
-    async def update(self, user_id: str, user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def update(self, user_id: str, user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Actualizar usuario existente"""
         try:
             # Verificar que el usuario existe
-            existing = await self.get_by_id(user_id)
+            existing = self.get_by_id(user_id)
             if not existing:
                 return None
             
@@ -134,18 +134,18 @@ class UserRepository:
             """
             
             self.db.execute_safe(query, tuple(values))
-            return await self.get_by_id(user_id)
+            return self.get_by_id(user_id)
             
         except Exception as e:
             if "Duplicate entry" in str(e) and "usr_email" in str(e):
                 raise Exception("El email ya está registrado por otro usuario")
             raise Exception(f"Error updating user: {str(e)}")
     
-    async def change_password(self, user_id: str, current_password: str, new_password: str) -> bool:
+    def change_password(self, user_id: str, current_password: str, new_password: str) -> bool:
         """Cambiar contraseña de usuario"""
         try:
             # Obtener usuario con contraseña
-            user = await self.get_by_email_with_password(user_id)
+            user = self.get_by_email_with_password(user_id)
             if not user:
                 return False
             
@@ -168,7 +168,7 @@ class UserRepository:
         except Exception as e:
             raise Exception(f"Error changing password: {str(e)}")
     
-    async def get_by_email_with_password(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_by_email_with_password(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Obtener usuario por ID incluyendo contraseña"""
         try:
             query = """
@@ -182,10 +182,10 @@ class UserRepository:
         except Exception as e:
             raise Exception(f"Error getting user with password: {str(e)}")
     
-    async def authenticate(self, email: str, password: str) -> Optional[Dict[str, Any]]:
+    def authenticate(self, email: str, password: str) -> Optional[Dict[str, Any]]:
         """Autenticar usuario"""
         try:
-            user = await self.get_by_email(email)
+            user = self.get_by_email(email)
             if not user:
                 return None
             
@@ -202,7 +202,7 @@ class UserRepository:
         except Exception as e:
             raise Exception(f"Error authenticating user: {str(e)}")
     
-    async def search(self, name: str = None, email: str = None) -> List[Dict[str, Any]]:
+    def search(self, name: str = None, email: str = None) -> List[Dict[str, Any]]:
         """Buscar usuarios por criterios"""
         try:
             where_clauses = []
@@ -233,7 +233,7 @@ class UserRepository:
         except Exception as e:
             raise Exception(f"Error searching users: {str(e)}")
     
-    async def count_total(self, status: str = None) -> int:
+    def count_total(self, status: str = None) -> int:
         """Contar total de usuarios"""
         try:
             if status:

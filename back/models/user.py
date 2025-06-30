@@ -42,6 +42,13 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
+# Modelo principal que incluye todos los campos (usado internamente)
+class User(UserResponse):
+    usr_password: str = Field(..., description="Contraseña hasheada (solo para uso interno)")
+
+    class Config:
+        from_attributes = True
+
 # Para listas resumidas
 class UserSummary(BaseModel):
     usr_id: str = Field(..., description="ID único del usuario")

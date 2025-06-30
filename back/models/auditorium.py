@@ -36,6 +36,11 @@ class AuditoriumResponse(AuditoriumBase):
     class Config:
         from_attributes = True
 
+# Modelo principal (alias de AuditoriumResponse)
+class Auditorium(AuditoriumResponse):
+    class Config:
+        from_attributes = True
+
 # Para listas resumidas
 class AuditoriumSummary(BaseModel):
     aud_id: str = Field(..., description="ID único del auditorio")
