@@ -1,0 +1,6 @@
+# Ignore everything inside docker/storage directory
+docker/storage/*
+
+# Optional: Keep the directory structure but ignore contents
+# docker/storage/**
+# !docker/storage/.gitkeep
