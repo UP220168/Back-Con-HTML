@@ -17,16 +17,24 @@ services:
     container_name: cinema_foraneo_backend
     working_dir: /app
     volumes:
-      - ./api:/app
+      - ../back:/app
     command: >
-      sh -c "pip install fastapi uvicorn mysql-connector-python python-dotenv passlib python-jose[cryptography] bcrypt &&
-             uvicorn main:app --host 0.0.0.0 --port 8000"
+      sh -c "apt-get update && apt-get install -y netcat-traditional &&
+             pip install fastapi uvicorn mysql-connector-python python-dotenv passlib python-jose[cryptography] bcrypt email-validator &&
+             while ! nc -z cinema_foraneo_sql 3306; do echo 'Waiting for database...'; sleep 2; done &&
+             echo 'Database is ready!' &&
+             uvicorn app:app --host 0.0.0.0 --port 8000"
     ports:
       - "5000:8000"
     depends_on:
       - cinema_foraneo_sql
     environment:
       - MYSQL_HOST=cinema_foraneo_sql
+      - DB_HOST_NAME=cinema_foraneo_sql
+      - DB_HOST_PORT=3306
+      - DB_USER_NAME=root
+      - DB_PASSWORD=root
+      - DB_NAME=cinema_foraneo_db
     networks:
       - cinema_foraneo_network
 
