@@ -1,0 +1,858 @@
+
+═══════════════════════[2025-06-29 19:25:23] EXECUTE_SAFE═══════════════════════
+
+Action: Ejecutando sentencia 1/1
+
+🔍 Query:
+
+SHOW DATABASES LIKE %s
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] EXECUTE_SAFE═══════════════════════
+
+Action: Ejecutando sentencia 1/1
+
+🔍 Query:
+
+CREATE DATABASE `cinema_foraneo_db`
+
+✅ Sentencia ejecutada correctamente:
+
+1 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Procesando archivo SQL: tb_auditorium.sql
+
+Ejecutando sentencias SQL: 6
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 1/6
+
+🔍 Query:
+
+CREATE TABLE tb_auditorium (
+aud_id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+aud_name VARCHAR(100) NOT NULL,
+aud_capacity INT NOT NULL CHECK (aud_capacity > 0),
+aud_total_rows INT NOT NULL CHECK (aud_total_rows > 0),
+aud_seats_per_row INT NOT NULL CHECK (aud_seats_per_row > 0),
+aud_row_format ENUM('letters', 'numbers') DEFAULT 'letters',
+aud_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+aud_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 2/6
+
+🔍 Query:
+
+CREATE INDEX idx_auditorium_name ON tb_auditorium(aud_name)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 3/6
+
+🔍 Query:
+
+CREATE INDEX idx_auditorium_capacity ON tb_auditorium(aud_capacity)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 4/6
+
+🔍 Query:
+
+CREATE TRIGGER validate_auditorium_capacity
+BEFORE INSERT ON tb_auditorium
+FOR EACH ROW
+BEGIN
+DECLARE calculated_capacity INT;
+SET calculated_capacity = NEW.aud_total_rows * NEW.aud_seats_per_row;
+IF NEW.aud_capacity != calculated_capacity THEN
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT = 'La capacidad debe ser igual a total_rows * seats_per_row';
+END IF;
+IF NEW.aud_row_format IS NULL THEN
+SET NEW.aud_row_format = 'letters';
+END IF;
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 5/6
+
+🔍 Query:
+
+CREATE TRIGGER validate_auditorium_capacity_update
+BEFORE UPDATE ON tb_auditorium
+FOR EACH ROW
+BEGIN
+DECLARE calculated_capacity INT;
+SET calculated_capacity = NEW.aud_total_rows * NEW.aud_seats_per_row;
+IF NEW.aud_capacity != calculated_capacity THEN
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT = 'La capacidad debe ser igual a total_rows * seats_per_row';
+END IF;
+SET NEW.aud_updated = CURRENT_TIMESTAMP;
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 6/6
+
+🔍 Query:
+
+INSERT INTO tb_auditorium (aud_id, aud_name, aud_capacity, aud_total_rows, aud_seats_per_row, aud_row_format) VALUES
+(UUID(), 'Sala 1', 100, 10, 10, 'letters'),
+(UUID(), 'Sala 2', 150, 15, 10, 'letters'),
+(UUID(), 'Sala VIP', 50, 5, 10, 'letters')
+
+✅ Sentencia ejecutada correctamente:
+
+3 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Procesando archivo SQL: tb_movie.sql
+
+Ejecutando sentencias SQL: 9
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 1/9
+
+🔍 Query:
+
+CREATE TABLE tb_movie (
+mov_id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+mov_title VARCHAR(255) NOT NULL,
+mov_classification VARCHAR(10) NOT NULL CHECK (mov_classification IN ('G', 'PG', 'PG-13', 'R', 'NC-17')),
+mov_duration INT NOT NULL CHECK (mov_duration > 0),
+mov_description TEXT,
+mov_genre VARCHAR(100),
+mov_director VARCHAR(255),
+mov_release_date DATE,
+mov_poster_url TEXT,
+mov_status ENUM('active', 'inactive') DEFAULT 'active',
+mov_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+mov_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 2/9
+
+🔍 Query:
+
+CREATE INDEX idx_movie_status ON tb_movie(mov_status)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 3/9
+
+🔍 Query:
+
+CREATE INDEX idx_movie_classification ON tb_movie(mov_classification)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 4/9
+
+🔍 Query:
+
+CREATE INDEX idx_movie_genre ON tb_movie(mov_genre)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 5/9
+
+🔍 Query:
+
+CREATE INDEX idx_movie_release_date ON tb_movie(mov_release_date)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 6/9
+
+🔍 Query:
+
+CREATE INDEX idx_movie_title ON tb_movie(mov_title)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 7/9
+
+🔍 Query:
+
+CREATE TRIGGER validate_movie_release_date
+BEFORE INSERT ON tb_movie
+FOR EACH ROW
+BEGIN
+IF NEW.mov_release_date IS NOT NULL AND NEW.mov_release_date < '1900-01-01' THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La fecha de estreno no puede ser anterior a 1900';
+END IF;
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 8/9
+
+🔍 Query:
+
+CREATE TRIGGER update_movie_timestamp
+BEFORE UPDATE ON tb_movie
+FOR EACH ROW
+BEGIN
+SET NEW.mov_updated = CURRENT_TIMESTAMP;
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 9/9
+
+🔍 Query:
+
+INSERT INTO tb_movie (mov_id, mov_title, mov_classification, mov_duration, mov_description, mov_genre, mov_director, mov_status) VALUES
+(UUID(), 'Avatar: El Camino del Agua', 'PG-13', 192, 'Secuela de la exitosa película de ciencia ficción', 'Ciencia Ficción', 'James Cameron', 'active'),
+(UUID(), 'Top Gun: Maverick', 'PG-13', 130, 'Secuela de la película de acción de los 80s', 'Acción', 'Joseph Kosinski', 'active')
+
+✅ Sentencia ejecutada correctamente:
+
+2 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Procesando archivo SQL: tb_employee.sql
+
+Ejecutando sentencias SQL: 8
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 1/8
+
+🔍 Query:
+
+CREATE TABLE tb_employee (
+emp_id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+emp_name VARCHAR(255) NOT NULL,
+emp_email VARCHAR(255) NOT NULL UNIQUE,
+emp_position ENUM('admin', 'employee', 'manager') NOT NULL DEFAULT 'employee',
+emp_password_hash VARCHAR(255) NOT NULL,
+emp_phone VARCHAR(20),
+emp_status ENUM('active', 'inactive') DEFAULT 'active',
+emp_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+emp_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 2/8
+
+🔍 Query:
+
+CREATE INDEX idx_employee_email ON tb_employee(emp_email)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 3/8
+
+🔍 Query:
+
+CREATE INDEX idx_employee_position ON tb_employee(emp_position)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 4/8
+
+🔍 Query:
+
+CREATE INDEX idx_employee_status ON tb_employee(emp_status)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 5/8
+
+🔍 Query:
+
+CREATE INDEX idx_employee_name ON tb_employee(emp_name)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 6/8
+
+🔍 Query:
+
+CREATE TRIGGER validate_employee_email_insert
+BEFORE INSERT ON tb_employee
+FOR EACH ROW
+BEGIN
+IF NEW.emp_email NOT REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Formato de email inválido';
+END IF;
+SET NEW.emp_email = LOWER(NEW.emp_email);
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 7/8
+
+🔍 Query:
+
+CREATE TRIGGER validate_employee_email_update
+BEFORE UPDATE ON tb_employee
+FOR EACH ROW
+BEGIN
+IF NEW.emp_email NOT REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Formato de email inválido';
+END IF;
+SET NEW.emp_email = LOWER(NEW.emp_email);
+SET NEW.emp_updated = CURRENT_TIMESTAMP;
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 8/8
+
+🔍 Query:
+
+INSERT INTO tb_employee (emp_id, emp_name, emp_email, emp_position, emp_password_hash, emp_status) VALUES
+(UUID(), 'Administrador', 'admin@cinema.com', 'admin', SHA2('admin123', 256), 'active')
+
+✅ Sentencia ejecutada correctamente:
+
+1 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:23] RUN_SQL_FILE═══════════════════════
+
+Action: Procesando archivo SQL: tb_user.sql
+
+Ejecutando sentencias SQL: 7
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 1/7
+
+🔍 Query:
+
+CREATE TABLE tb_user (
+usr_id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+usr_name VARCHAR(255) NOT NULL,
+usr_email VARCHAR(255) NOT NULL UNIQUE,
+usr_password_hash VARCHAR(255) NOT NULL,
+usr_phone VARCHAR(20),
+usr_birth_date DATE,
+usr_status ENUM('active', 'inactive') DEFAULT 'active',
+usr_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+usr_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 2/7
+
+🔍 Query:
+
+CREATE INDEX idx_user_email ON tb_user(usr_email)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 3/7
+
+🔍 Query:
+
+CREATE INDEX idx_user_status ON tb_user(usr_status)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 4/7
+
+🔍 Query:
+
+CREATE INDEX idx_user_name ON tb_user(usr_name)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 5/7
+
+🔍 Query:
+
+CREATE INDEX idx_user_birth_date ON tb_user(usr_birth_date)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 6/7
+
+🔍 Query:
+
+CREATE TRIGGER validate_user_insert
+BEFORE INSERT ON tb_user
+FOR EACH ROW
+BEGIN
+IF NEW.usr_email NOT REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Formato de email inválido';
+END IF;
+IF NEW.usr_birth_date IS NOT NULL AND DATEDIFF(CURDATE(), NEW.usr_birth_date) < 4745 THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El usuario debe tener al menos 13 años';
+END IF;
+SET NEW.usr_email = LOWER(NEW.usr_email);
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 7/7
+
+🔍 Query:
+
+CREATE TRIGGER validate_user_update
+BEFORE UPDATE ON tb_user
+FOR EACH ROW
+BEGIN
+IF NEW.usr_email NOT REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Formato de email inválido';
+END IF;
+IF NEW.usr_birth_date IS NOT NULL AND DATEDIFF(CURDATE(), NEW.usr_birth_date) < 4745 THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El usuario debe tener al menos 13 años';
+END IF;
+SET NEW.usr_email = LOWER(NEW.usr_email);
+SET NEW.usr_updated = CURRENT_TIMESTAMP;
+END
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Procesando archivo SQL: tb_screening.sql
+
+Ejecutando sentencias SQL: 10
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 1/10
+
+🔍 Query:
+
+CREATE TABLE tb_screening (
+scr_id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+scr_mov_id CHAR(36) NOT NULL,
+scr_aud_id CHAR(36) NOT NULL,
+scr_date DATE NOT NULL,
+scr_time TIME NOT NULL,
+scr_price DECIMAL(10,2) NOT NULL CHECK (scr_price > 0),
+scr_available_seats INT NOT NULL DEFAULT 0,
+scr_status ENUM('scheduled', 'ongoing', 'finished', 'cancelled') DEFAULT 'scheduled',
+scr_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+scr_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+FOREIGN KEY (scr_mov_id) REFERENCES tb_movie(mov_id) ON DELETE CASCADE,
+FOREIGN KEY (scr_aud_id) REFERENCES tb_auditorium(aud_id) ON DELETE CASCADE,
+UNIQUE KEY unique_screening (scr_aud_id, scr_date, scr_time)
+)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 2/10
+
+🔍 Query:
+
+CREATE INDEX idx_screening_date ON tb_screening(scr_date)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 3/10
+
+🔍 Query:
+
+CREATE INDEX idx_screening_movie ON tb_screening(scr_mov_id)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 4/10
+
+🔍 Query:
+
+CREATE INDEX idx_screening_auditorium ON tb_screening(scr_aud_id)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 5/10
+
+🔍 Query:
+
+CREATE INDEX idx_screening_status ON tb_screening(scr_status)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 6/10
+
+🔍 Query:
+
+CREATE INDEX idx_screening_datetime ON tb_screening(scr_date, scr_time)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Ejecutando sentencia 7/10
+
+🔍 Query:
+
+CREATE INDEX idx_screening_available_seats ON tb_screening(scr_available_seats)
+
+✅ Sentencia ejecutada correctamente:
+
+0 row(s) affected
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Error en sentencia 8/10
+
+🔍 Query:
+
+CREATE TRIGGER initialize_screening_seats
+AFTER INSERT ON tb_screening
+FOR EACH ROW
+BEGIN
+DECLARE auditorium_capacity INT;
+DECLARE total_rows INT;
+DECLARE seats_per_row INT;
+DECLARE row_format ENUM('letters', 'numbers');
+DECLARE i INT DEFAULT 1;
+DECLARE j INT DEFAULT 1;
+DECLARE current_row_letter VARCHAR(2);
+SELECT aud_capacity, aud_total_rows, aud_seats_per_row, aud_row_format
+INTO auditorium_capacity, total_rows, seats_per_row, row_format
+FROM tb_auditorium
+WHERE aud_id = NEW.scr_aud_id;
+UPDATE tb_screening
+SET scr_available_seats = auditorium_capacity
+WHERE scr_id = NEW.scr_id;
+IF row_format = 'letters' THEN
+WHILE i <= total_rows DO
+IF i <= 26 THEN
+SET current_row_letter = CHAR(64 + i);
+ELSE
+SET current_row_letter = CONCAT(CHAR(64 + FLOOR((i-1)/26)), CHAR(64 + ((i-1) % 26) + 1));
+END IF;
+SET j = 1;
+WHILE j <= seats_per_row DO
+INSERT INTO tb_ticket (tic_id, tic_row, tic_seat, tic_scr_id, tic_status)
+VALUES (UUID(), current_row_letter, j, NEW.scr_id, 'available');
+SET j = j + 1;
+END WHILE;
+SET i = i + 1;
+END WHILE;
+ELSE
+INSERT INTO tb_ticket (tic_id, tic_row, tic_seat, tic_scr_id, tic_status)
+SELECT
+UUID(),
+CAST(r.row_number AS CHAR(2)),
+s.seat_number,
+NEW.scr_id,
+'available'
+FROM (
+SELECT ROW_NUMBER() OVER () as row_number
+FROM information_schema.tables
+LIMIT total_rows
+) r
+CROSS JOIN (
+SELECT ROW_NUMBER() OVER () as seat_number
+FROM information_schema.tables
+LIMIT seats_per_row
+) s;
+END IF;
+END
+
+✅ ERROR:
+
+1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'row_number
+FROM information_schema.tables
+LIMIT total_rows
+) r
+CROSS JOIN (
+SELE' at line 43
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════[2025-06-29 19:25:24] RUN_SQL_FILE═══════════════════════
+
+Action: Error procesando archivo
+
+1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'row_number
+FROM information_schema.tables
+LIMIT total_rows
+) r
+CROSS JOIN (
+SELE' at line 43
+
+🔍 Query:
+
+back/sql/tb_screening.sql
+
+════════════════════════════════════════════════════════════════════════════════
+

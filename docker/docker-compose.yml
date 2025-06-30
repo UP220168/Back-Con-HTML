@@ -1,0 +1,35 @@
+services:
+  cinema_foraneo_sql:
+    image: mysql:8.0
+    container_name: cinema_foraneo_sql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "4000:3306"
+    volumes:
+      - ./storage/database:/var/lib/mysql
+    networks:
+      - cinema_foraneo_network
+
+  cinema_foraneo_backend:
+    image: python:3.11-slim
+    container_name: cinema_foraneo_backend
+    working_dir: /app
+    volumes:
+      - ./api:/app
+    command: >
+      sh -c "pip install fastapi uvicorn mysql-connector-python python-dotenv passlib python-jose[cryptography] bcrypt &&
+             uvicorn main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "5000:8000"
+    depends_on:
+      - cinema_foraneo_sql
+    environment:
+      - MYSQL_HOST=cinema_foraneo_sql
+    networks:
+      - cinema_foraneo_network
+
+networks:
+  cinema_foraneo_network:
+    driver: bridge
