@@ -35,10 +35,10 @@ CREATE TRIGGER validate_sale_insert
     BEFORE INSERT ON tb_sale
     FOR EACH ROW
 BEGIN
-    DECLARE ticket_status ENUM('available', 'reserved', 'sold');
-    DECLARE user_status ENUM('active', 'inactive');
-    DECLARE emp_status ENUM('active', 'inactive');
-    DECLARE screening_status ENUM('scheduled', 'ongoing', 'finished', 'cancelled');
+    DECLARE ticket_status ENUM('available', 'reserved', 'sold') DEFAULT 'available';
+    DECLARE user_status ENUM('active', 'inactive') DEFAULT 'active';
+    DECLARE emp_status ENUM('active', 'inactive') DEFAULT 'active';
+    DECLARE screening_status ENUM('scheduled', 'ongoing', 'finished', 'cancelled') DEFAULT 'scheduled';
     
     -- Verificar estado del ticket
     SELECT t.tic_status, s.scr_status 

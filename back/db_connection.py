@@ -52,9 +52,9 @@ try:
       "back/sql/tb_movie.sql",
       "back/sql/tb_employee.sql",
       "back/sql/tb_user.sql",
-      # "back/sql/tb_screening.sql", #Aqui ya no jalo :(
-      # "back/sql/tb_ticket.sql",
-      # "back/sql/tb_sale.sql",
+      "back/sql/tb_screening.sql", #Aqui ya no jalo :(
+      "back/sql/tb_ticket.sql",
+      "back/sql/tb_sale.sql",
     ])
         
     # Insert initial data into the database

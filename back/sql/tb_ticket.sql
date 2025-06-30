@@ -28,10 +28,10 @@ CREATE TRIGGER validate_ticket_seat_insert
     BEFORE INSERT ON tb_ticket
     FOR EACH ROW
 BEGIN
-    DECLARE max_rows INT;
-    DECLARE max_seats_per_row INT;
-    DECLARE row_format ENUM('letters', 'numbers');
-    DECLARE row_number INT;
+    DECLARE max_rows INT DEFAULT 0;
+    DECLARE max_seats_per_row INT DEFAULT 0;
+    DECLARE row_format ENUM('letters', 'numbers') DEFAULT 'letters';
+    DECLARE current_row INT DEFAULT 0;
     
     -- Obtener configuración del auditorio
     SELECT a.aud_total_rows, a.aud_seats_per_row, a.aud_row_format
@@ -44,9 +44,9 @@ BEGIN
     IF row_format = 'letters' THEN
         -- Convertir letra a número para validación (A=1, B=2, etc.)
         IF LENGTH(NEW.tic_row) = 1 THEN
-            SET row_number = ASCII(NEW.tic_row) - 64; -- A=1, B=2, etc.
+            SET current_row = ASCII(NEW.tic_row) - 64; -- A=1, B=2, etc.
         ELSEIF LENGTH(NEW.tic_row) = 2 THEN
-            SET row_number = (ASCII(LEFT(NEW.tic_row, 1)) - 64) * 26 + (ASCII(RIGHT(NEW.tic_row, 1)) - 64);
+            SET current_row = (ASCII(LEFT(NEW.tic_row, 1)) - 64) * 26 + (ASCII(RIGHT(NEW.tic_row, 1)) - 64);
         ELSE
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Formato de fila inválido. Use A-Z o AA-ZZ';
         END IF;
@@ -57,11 +57,11 @@ BEGIN
         END IF;
     ELSE
         -- Para formato numérico (compatibilidad futura)
-        SET row_number = CAST(NEW.tic_row AS UNSIGNED);
+        SET current_row = CAST(NEW.tic_row AS UNSIGNED);
     END IF;
     
     -- Validar que la fila esté dentro del rango
-    IF row_number > max_rows THEN
+    IF current_row > max_rows THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La fila especificada excede la capacidad del auditorio';
     END IF;
     
@@ -76,7 +76,7 @@ CREATE TRIGGER validate_ticket_status_update
     BEFORE UPDATE ON tb_ticket
     FOR EACH ROW
 BEGIN
-    DECLARE screening_status ENUM('scheduled', 'ongoing', 'finished', 'cancelled');
+    DECLARE screening_status ENUM('scheduled', 'ongoing', 'finished', 'cancelled') DEFAULT 'scheduled';
     
     -- Obtener estado de la proyección
     SELECT scr_status INTO screening_status

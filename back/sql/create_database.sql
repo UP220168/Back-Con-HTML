@@ -61,19 +61,19 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================
 
 -- Insertar auditorios de ejemplo
-INSERT INTO tb_auditorium (aud_id, aud_name, aud_capacity, aud_total_rows, aud_seats_per_row, aud_row_format) VALUES
-(UUID(), 'Sala 1', 100, 10, 10, 'letters'),
-(UUID(), 'Sala 2', 150, 15, 10, 'letters'),
-(UUID(), 'Sala VIP', 50, 5, 10, 'letters');
+INSERT INTO tb_auditorium (aud_id, aud_name, aud_total_rows, aud_seats_per_row, aud_row_format) VALUES
+(UUID(), 'Sala 1', 10, 10, 'letters'),
+(UUID(), 'Sala 2', 15, 10, 'letters'),
+(UUID(), 'Sala VIP', 5, 10, 'letters');
 
 -- Insertar empleado administrador por defecto
 INSERT INTO tb_employee (emp_id, emp_name, emp_email, emp_position, emp_password_hash, emp_status) VALUES
 (UUID(), 'Administrador', 'admin@cinema.com', 'admin', SHA2('admin123', 256), 'active');
 
 -- Insertar películas de ejemplo
-INSERT INTO tb_movie (mov_id, mov_title, mov_classification, mov_duration, mov_description, mov_genre, mov_director, mov_status) VALUES
-(UUID(), 'Avatar: El Camino del Agua', 'PG-13', 192, 'Secuela de la exitosa película de ciencia ficción', 'Ciencia Ficción', 'James Cameron', 'active'),
-(UUID(), 'Top Gun: Maverick', 'PG-13', 130, 'Secuela de la película de acción de los 80s', 'Acción', 'Joseph Kosinski', 'active');
+INSERT INTO tb_movie (mov_id, mov_title, mov_classification, mov_duration, mov_description, mov_genre, mov_status) VALUES
+(UUID(), 'Avatar: El Camino del Agua', 'PG-13', 192, 'Secuela de la exitosa película de ciencia ficción', 'Ciencia Ficción', 'active'),
+(UUID(), 'Top Gun: Maverick', 'PG-13', 130, 'Secuela de la película de acción de los 80s', 'Acción', 'active');
 
 -- ============================================
 -- VERIFICACIÓN DE INSTALACIÓN
