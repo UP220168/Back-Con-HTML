@@ -25,7 +25,7 @@ class MovieBase(BaseModel):
 
 # Para crear películas (POST)
 class MovieCreate(MovieBase):
-    pass
+    mov_status: Optional[MovieStatus] = MovieStatus.ACTIVE
 
 # Para actualizar películas (PUT/PATCH)
 class MovieUpdate(BaseModel):

@@ -36,7 +36,7 @@ def get_all_employees():
         )
 
 @router.get("/{employee_id}", response_model=EmployeeResponse)
-def get_employee(employee_id: int):
+def get_employee(employee_id: str):
     """Obtener un empleado por ID"""
     try:
         employee = employee_service.get_employee(employee_id)
@@ -74,7 +74,7 @@ def get_employee_by_email(email: str):
         )
 
 @router.put("/{employee_id}", response_model=EmployeeResponse)
-def update_employee(employee_id: int, employee_data: EmployeeUpdate):
+def update_employee(employee_id: str, employee_data: EmployeeUpdate):
     """Actualizar un empleado"""
     try:
         updated_employee = employee_service.update_employee(employee_id, employee_data)
@@ -96,7 +96,7 @@ def update_employee(employee_id: int, employee_data: EmployeeUpdate):
         )
 
 @router.delete("/{employee_id}")
-def delete_employee(employee_id: int):
+def delete_employee(employee_id: str):
     """Eliminar un empleado"""
     try:
         success = employee_service.delete_employee(employee_id)

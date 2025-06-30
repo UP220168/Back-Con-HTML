@@ -31,7 +31,7 @@ class EmployeeService:
         
         return self.employee_repository.create(employee_dict)
     
-    def get_employee(self, employee_id: int) -> Optional[Employee]:
+    def get_employee(self, employee_id: str) -> Optional[Employee]:
         """Obtener empleado por ID"""
         return self.employee_repository.get_by_id(employee_id)
     
@@ -43,7 +43,7 @@ class EmployeeService:
         """Obtener empleado por email"""
         return self.employee_repository.get_by_email(email)
     
-    def update_employee(self, employee_id: int, employee_data: EmployeeUpdate) -> Optional[Employee]:
+    def update_employee(self, employee_id: str, employee_data: EmployeeUpdate) -> Optional[Employee]:
         """Actualizar empleado"""
         # Verificar que el empleado existe
         existing_employee = self.employee_repository.get_by_id(employee_id)
@@ -63,7 +63,7 @@ class EmployeeService:
         
         return self.employee_repository.update(employee_id, employee_dict)
     
-    def delete_employee(self, employee_id: int) -> bool:
+    def delete_employee(self, employee_id: str) -> bool:
         """Eliminar empleado"""
         return self.employee_repository.delete(employee_id)
     
