@@ -1,110 +1,274 @@
-from typing import List, Optional
-from models.screening import Screening, ScreeningCreate, ScreeningUpdate
-from repositories.screening_repository import ScreeningRepository
-from repositories.movie_repository import MovieRepository
-from repositories.auditorium_repository import AuditoriumRepository
+from typing import List, Optional, Dict, Any
+from fastapi import HTTPException
+from models.screening import ScreeningCreate, ScreeningUpdate, ScreeningResponse, ScreeningSummary
+from repositories.screening_repository import screening_repository
+from repositories.movie_repository import movie_repository
+from repositories.auditorium_repository import auditorium_repository
+import logging
 from datetime import date, time, datetime, timedelta
 
+logger = logging.getLogger(__name__)
+
 class ScreeningService:
-    def __init__(self):
-        self.screening_repository = ScreeningRepository()
-        self.movie_repository = MovieRepository()
-        self.auditorium_repository = AuditoriumRepository()
+    """Service para lógica de negocio de proyecciones"""
     
-    def create_screening(self, screening_data: ScreeningCreate) -> Screening:
-        """Crear una nueva proyección"""
-        # Verificar que la película existe
-        movie = self.movie_repository.get_by_id(screening_data.scr_mov_id)
-        if not movie:
-            raise ValueError("La película especificada no existe")
+    def __init__(self):
+        self.repository = screening_repository
+        self.movie_repository = movie_repository
+        self.auditorium_repository = auditorium_repository
+    
+    async def get_screenings(self, skip: int = 0, limit: int = 100) -> Dict[str, Any]:
+        """Obtener lista de proyecciones con paginación"""
+        try:
+            # Validar parámetros
+            if skip < 0:
+                raise HTTPException(status_code=400, detail="Skip debe ser >= 0")
+            if limit <= 0 or limit > 100:
+                raise HTTPException(status_code=400, detail="Limit debe estar entre 1 y 100")
+            
+            # Obtener proyecciones y total
+            screenings = await self.repository.get_all(skip, limit)
+            total = await self.repository.count_total()
+            
+            # Convertir a modelos Pydantic
+            screening_list = [self._dict_to_screening_summary(screening) for screening in screenings]
+            
+            return {
+                "screenings": screening_list,
+                "total": total,
+                "skip": skip,
+                "limit": limit,
+                "has_more": (skip + limit) < total
+            }
         
-        # Verificar que el auditorio existe
-        auditorium = self.auditorium_repository.get_by_id(screening_data.scr_aud_id)
-        if not auditorium:
-            raise ValueError("El auditorio especificado no existe")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in get_screenings: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+    async def get_screening_by_id(self, screening_id: str) -> ScreeningResponse:
+        """Obtener proyección por ID"""
+        try:
+            # Validar formato UUID (básico)
+            if not screening_id or len(screening_id) < 30:
+                raise HTTPException(status_code=400, detail="ID de proyección inválido")
+            
+            screening = await self.repository.get_by_id(screening_id)
+            if not screening:
+                raise HTTPException(status_code=404, detail="Proyección no encontrada")
+            
+            return self._dict_to_screening_response(screening)
         
-        # Verificar que no hay conflictos de horario
-        existing_screenings = self.screening_repository.get_by_auditorium(screening_data.scr_aud_id)
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in get_screening_by_id: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+    async def create_screening(self, screening_data: ScreeningCreate) -> ScreeningResponse:
+        """Crear nueva proyección"""
+        try:
+            # Validaciones de negocio adicionales
+            await self._validate_screening_data(screening_data.dict())
+            
+            # Verificar que la película existe
+            movie = await self.movie_repository.get_by_id(screening_data.scr_mov_id)
+            if not movie:
+                raise HTTPException(status_code=400, detail="La película especificada no existe")
+            
+            # Verificar que el auditorio existe
+            auditorium = await self.auditorium_repository.get_by_id(screening_data.scr_aud_id)
+            if not auditorium:
+                raise HTTPException(status_code=400, detail="El auditorio especificado no existe")
+            
+            # Verificar conflictos de horario
+            await self._check_schedule_conflicts(screening_data)
+            
+            # Crear proyección
+            created_screening = await self.repository.create(screening_data.dict())
+            
+            if not created_screening:
+                raise HTTPException(status_code=500, detail="Error creando proyección")
+            
+            return self._dict_to_screening_response(created_screening)
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in create_screening: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+    async def update_screening(self, screening_id: str, screening_data: ScreeningUpdate) -> ScreeningResponse:
+        """Actualizar proyección existente"""
+        try:
+            # Validar ID
+            if not screening_id:
+                raise HTTPException(status_code=400, detail="ID de proyección requerido")
+            
+            # Solo incluir campos que no son None
+            update_data = {k: v for k, v in screening_data.dict().items() if v is not None}
+            
+            if not update_data:
+                raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+            
+            # Validaciones de negocio
+            await self._validate_screening_data(update_data, is_update=True)
+            
+            # Actualizar
+            updated_screening = await self.repository.update(screening_id, update_data)
+            
+            if not updated_screening:
+                raise HTTPException(status_code=404, detail="Proyección no encontrada")
+            
+            return self._dict_to_screening_response(updated_screening)
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in update_screening: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+    async def delete_screening(self, screening_id: str) -> Dict[str, str]:
+        """Eliminar proyección (soft delete)"""
+        try:
+            if not screening_id:
+                raise HTTPException(status_code=400, detail="ID de proyección requerido")
+            
+            success = await self.repository.delete(screening_id)
+            
+            if not success:
+                raise HTTPException(status_code=404, detail="Proyección no encontrada")
+            
+            return {"message": "Proyección eliminada exitosamente"}
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in delete_screening: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+    async def search_screenings(self, movie_id: str = None, auditorium_id: str = None, 
+                               screening_date: date = None, status: str = None) -> List[ScreeningSummary]:
+        """Buscar proyecciones por criterios"""
+        try:
+            if not any([movie_id, auditorium_id, screening_date, status]):
+                raise HTTPException(status_code=400, detail="Debe proporcionar al menos un criterio de búsqueda")
+            
+            screenings = await self.repository.search(movie_id, auditorium_id, screening_date, status)
+            
+            return [self._dict_to_screening_summary(screening) for screening in screenings]
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in search_screenings: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+    async def get_available_seats(self, screening_id: str) -> int:
+        """Obtener asientos disponibles para una proyección"""
+        try:
+            screening = await self.repository.get_by_id(screening_id)
+            if not screening:
+                raise HTTPException(status_code=404, detail="Proyección no encontrada")
+            
+            return screening['scr_available_seats']
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in get_available_seats: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+    # Métodos auxiliares privados
+    async def _validate_screening_data(self, data: Dict[str, Any], is_update: bool = False):
+        """Validaciones de negocio adicionales"""
+        # Validar precio
+        if 'scr_price' in data:
+            if data['scr_price'] <= 0:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="El precio debe ser mayor a 0"
+                )
+        
+        # Validar fecha no en el pasado
+        if 'scr_date' in data:
+            screening_date = data['scr_date']
+            if isinstance(screening_date, str):
+                screening_date = datetime.strptime(screening_date, '%Y-%m-%d').date()
+            
+            if screening_date < date.today():
+                raise HTTPException(
+                    status_code=400, 
+                    detail="No se puede programar una proyección en el pasado"
+                )
+    
+    async def _check_schedule_conflicts(self, screening_data: ScreeningCreate, exclude_screening_id: str = None):
+        """Verificar conflictos de horario en el auditorio"""
+        # Buscar proyecciones del mismo auditorio y fecha
+        existing_screenings = await self.repository.search(
+            auditorium_id=screening_data.scr_aud_id,
+            screening_date=screening_data.scr_date
+        )
+        
+        # Verificar solapamiento de horarios (asumiendo 3 horas por función incluido limpieza)
+        new_start = datetime.combine(screening_data.scr_date, screening_data.scr_time)
+        new_end = new_start + timedelta(hours=3)
+        
         for existing in existing_screenings:
-            if (existing.scr_date == screening_data.scr_date and 
-                existing.scr_status in ['scheduled', 'ongoing']):
-                # Verificar solapamiento de horarios (asumiendo 2 horas por película)
-                existing_start = datetime.combine(existing.scr_date, existing.scr_time)
-                existing_end = existing_start + timedelta(hours=2)
-                new_start = datetime.combine(screening_data.scr_date, screening_data.scr_time)
-                new_end = new_start + timedelta(hours=2)
+            # Excluir la proyección actual si es una actualización
+            if exclude_screening_id and existing.get('scr_id') == exclude_screening_id:
+                continue
+                
+            if existing.get('scr_status') in ['scheduled', 'ongoing']:
+                existing_start = datetime.combine(existing['scr_date'], existing['scr_time'])
+                existing_end = existing_start + timedelta(hours=3)
                 
                 if (new_start < existing_end and new_end > existing_start):
-                    raise ValueError("Ya existe una proyección en ese horario en el auditorio")
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Ya existe una proyección en ese horario en el auditorio"
+                    )
+    
+    def _dict_to_screening_response(self, screening_dict: Dict[str, Any]) -> ScreeningResponse:
+        """Convertir diccionario a modelo ScreeningResponse"""
+        # Crear una copia del diccionario para modificar
+        processed_dict = screening_dict.copy()
         
-        # Crear la proyección
-        screening_dict = screening_data.model_dump()
-        return self.screening_repository.create(screening_dict)
-    
-    def get_screening(self, screening_id: str) -> Optional[Screening]:
-        """Obtener proyección por ID"""
-        return self.screening_repository.get_by_id(screening_id)
-    
-    def get_all_screenings(self) -> List[Screening]:
-        """Obtener todas las proyecciones"""
-        return self.screening_repository.get_all()
-    
-    def get_screenings_by_movie(self, movie_id: str) -> List[Screening]:
-        """Obtener proyecciones por película"""
-        return self.screening_repository.get_by_movie(movie_id)
-    
-    def get_screenings_by_auditorium(self, auditorium_id: str) -> List[Screening]:
-        """Obtener proyecciones por auditorio"""
-        return self.screening_repository.get_by_auditorium(auditorium_id)
-    
-    def get_screenings_by_date(self, date: str) -> List[Screening]:
-        """Obtener proyecciones por fecha"""
-        return self.screening_repository.get_by_date(date)
-    
-    def get_screenings_by_status(self, status: str) -> List[Screening]:
-        """Obtener proyecciones por estado"""
-        return self.screening_repository.get_by_status(status)
-    
-    def update_screening(self, screening_id: str, screening_data: ScreeningUpdate) -> Optional[Screening]:
-        """Actualizar proyección"""
-        # Verificar que la proyección existe
-        existing_screening = self.screening_repository.get_by_id(screening_id)
-        if not existing_screening:
-            return None
+        # Convertir timedelta a time si es necesario
+        if 'scr_time' in processed_dict and hasattr(processed_dict['scr_time'], 'total_seconds'):
+            # Convertir timedelta a time
+            total_seconds = int(processed_dict['scr_time'].total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            processed_dict['scr_time'] = time(hours, minutes, seconds)
         
-        # Validar referencias si se están actualizando
-        screening_dict = screening_data.model_dump(exclude_unset=True)
+        # Convertir Decimal a float si es necesario
+        if 'scr_price' in processed_dict and hasattr(processed_dict['scr_price'], '__float__'):
+            processed_dict['scr_price'] = float(processed_dict['scr_price'])
         
-        if 'scr_mov_id' in screening_dict:
-            movie = self.movie_repository.get_by_id(screening_dict['scr_mov_id'])
-            if not movie:
-                raise ValueError("La película especificada no existe")
-        
-        if 'scr_aud_id' in screening_dict:
-            auditorium = self.auditorium_repository.get_by_id(screening_dict['scr_aud_id'])
-            if not auditorium:
-                raise ValueError("El auditorio especificado no existe")
-        
-        return self.screening_repository.update(screening_id, screening_dict)
+        return ScreeningResponse(**processed_dict)
     
-    def delete_screening(self, screening_id: str) -> bool:
-        """Eliminar proyección"""
-        return self.screening_repository.delete(screening_id)
-    
-    def update_available_seats(self, screening_id: str, seats: int) -> bool:
-        """Actualizar asientos disponibles"""
-        return self.screening_repository.update_available_seats(screening_id, seats)
-    
-    def get_upcoming_screenings(self, days: int = 7) -> List[Screening]:
-        """Obtener proyecciones próximas"""
-        screenings = self.screening_repository.get_all()
-        current_date = date.today()
-        end_date = current_date + timedelta(days=days)
+    def _dict_to_screening_summary(self, screening_dict: Dict[str, Any]) -> ScreeningSummary:
+        """Convertir diccionario a modelo ScreeningSummary"""
+        # Crear una copia del diccionario para modificar
+        processed_dict = screening_dict.copy()
         
-        upcoming = []
-        for screening in screenings:
-            if (current_date <= screening.scr_date <= end_date and 
-                screening.scr_status in ['scheduled', 'ongoing']):
-                upcoming.append(screening)
+        # Convertir timedelta a time si es necesario
+        if 'scr_time' in processed_dict and hasattr(processed_dict['scr_time'], 'total_seconds'):
+            # Convertir timedelta a time
+            total_seconds = int(processed_dict['scr_time'].total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            processed_dict['scr_time'] = time(hours, minutes, seconds)
         
-        return upcoming
+        # Convertir Decimal a float si es necesario
+        if 'scr_price' in processed_dict and hasattr(processed_dict['scr_price'], '__float__'):
+            processed_dict['scr_price'] = float(processed_dict['scr_price'])
+        
+        return ScreeningSummary(**processed_dict)
+
+# Instancia global del service
+screening_service = ScreeningService()

@@ -56,3 +56,16 @@ class ScreeningResponse(BaseModel):
     @classmethod
     def from_screening(cls, screening: Screening) -> "ScreeningResponse":
         return cls(**screening.model_dump())
+
+class ScreeningSummary(BaseModel):
+    scr_id: str
+    scr_mov_id: str
+    scr_aud_id: str
+    scr_date: date
+    scr_time: time
+    scr_price: float
+    scr_available_seats: int
+    scr_status: ScreeningStatus
+
+    class Config:
+        from_attributes = True

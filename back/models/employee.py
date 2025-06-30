@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -16,7 +16,7 @@ class EmployeeStatus(str, Enum):
 # Modelo base con campos comunes
 class EmployeeBase(BaseModel):
     emp_name: str = Field(..., min_length=2, max_length=255, description="Nombre completo del empleado")
-    emp_email: EmailStr = Field(..., description="Correo electrónico único")
+    emp_email: str = Field(..., description="Correo electrónico único")
     emp_position: EmployeePosition = Field(..., description="Posición del empleado")
     emp_phone: Optional[str] = Field(None, min_length=10, max_length=20, description="Número de teléfono")
 
@@ -27,7 +27,7 @@ class EmployeeCreate(EmployeeBase):
 # Para actualizar empleados (PUT/PATCH)
 class EmployeeUpdate(BaseModel):
     emp_name: Optional[str] = Field(None, min_length=2, max_length=255, description="Nombre completo")
-    emp_email: Optional[EmailStr] = Field(None, description="Correo electrónico")
+    emp_email: Optional[str] = Field(None, description="Correo electrónico")
     emp_position: Optional[EmployeePosition] = Field(None, description="Posición del empleado")
     emp_phone: Optional[str] = Field(None, min_length=10, max_length=20, description="Teléfono")
     emp_status: Optional[EmployeeStatus] = Field(None, description="Estado del empleado")
@@ -58,7 +58,7 @@ class Employee(EmployeeResponse):
 class EmployeeSummary(BaseModel):
     emp_id: str = Field(..., description="ID único del empleado")
     emp_name: str = Field(..., description="Nombre del empleado")
-    emp_email: EmailStr = Field(..., description="Email del empleado")
+    emp_email: str = Field(..., description="Email del empleado")
     emp_position: EmployeePosition = Field(..., description="Posición")
     emp_status: EmployeeStatus = Field(..., description="Estado del empleado")
 
@@ -67,7 +67,7 @@ class EmployeeSummary(BaseModel):
 
 # Para login de empleados
 class EmployeeLogin(BaseModel):
-    emp_email: EmailStr = Field(..., description="Correo electrónico")
+    emp_email: str = Field(..., description="Correo electrónico")
     emp_password: str = Field(..., description="Contraseña")
 
 # Para respuesta de login de empleados

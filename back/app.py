@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     print("🔴 Cerrando aplicación...")
 
 # Importar routers
-from routers import movies, auditoriums, users, employees, screenings, tickets, sales
+from routers import movies, auditoriums, users, employees, screenings, tickets, sales, reports
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -47,7 +47,7 @@ app = FastAPI(
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "file://", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,6 +61,7 @@ app.include_router(employees.router, prefix="/api/employees")
 app.include_router(screenings.router, prefix="/api/screenings")
 app.include_router(tickets.router, prefix="/api/tickets")
 app.include_router(sales.router, prefix="/api/sales")
+app.include_router(reports.router, prefix="/api/reports")
 
 # Ruta básica
 @app.get("/")
@@ -78,6 +79,7 @@ async def read_root():
             "screenings": "/api/screenings/",
             "tickets": "/api/tickets/",
             "sales": "/api/sales/",
+            "reports": "/api/reports/",
             "health": "/health"
         }
     }

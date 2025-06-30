@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime, date
 from enum import Enum
@@ -11,8 +11,8 @@ class UserStatus(str, Enum):
 # Modelo base con campos comunes
 class UserBase(BaseModel):
     usr_name: str = Field(..., min_length=2, max_length=255, description="Nombre completo del usuario")
-    usr_email: EmailStr = Field(..., description="Correo electrónico único")
-    usr_phone: Optional[str] = Field(None, min_length=10, max_length=20, description="Número de teléfono")
+    usr_email: str = Field(..., description="Correo electrónico único")
+    usr_phone: Optional[str] = Field(None, min_length=8, max_length=20, description="Número de teléfono")
     usr_birth_date: Optional[date] = Field(None, description="Fecha de nacimiento")
 
 # Para crear usuarios (POST)
@@ -22,8 +22,8 @@ class UserCreate(UserBase):
 # Para actualizar usuarios (PUT/PATCH)
 class UserUpdate(BaseModel):
     usr_name: Optional[str] = Field(None, min_length=2, max_length=255, description="Nombre completo")
-    usr_email: Optional[EmailStr] = Field(None, description="Correo electrónico")
-    usr_phone: Optional[str] = Field(None, min_length=10, max_length=20, description="Teléfono")
+    usr_email: Optional[str] = Field(None, description="Correo electrónico")
+    usr_phone: Optional[str] = Field(None, min_length=8, max_length=20, description="Teléfono")
     usr_birth_date: Optional[date] = Field(None, description="Fecha de nacimiento")
     usr_status: Optional[UserStatus] = Field(None, description="Estado del usuario")
 
@@ -53,7 +53,7 @@ class User(UserResponse):
 class UserSummary(BaseModel):
     usr_id: str = Field(..., description="ID único del usuario")
     usr_name: str = Field(..., description="Nombre del usuario")
-    usr_email: EmailStr = Field(..., description="Email del usuario")
+    usr_email: str = Field(..., description="Email del usuario")
     usr_status: UserStatus = Field(..., description="Estado del usuario")
 
     class Config:
@@ -61,7 +61,7 @@ class UserSummary(BaseModel):
 
 # Para login
 class UserLogin(BaseModel):
-    usr_email: EmailStr = Field(..., description="Correo electrónico")
+    usr_email: str = Field(..., description="Correo electrónico")
     usr_password: str = Field(..., description="Contraseña")
 
 # Para respuesta de login
