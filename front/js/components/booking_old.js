@@ -40,65 +40,44 @@ class Booking {
 
     async loadData() {
         try {
-            console.log('📊 Cargando datos de booking...');
+            showLoading(true);
+            log('Loading booking data...');
             
-            // Cargar auditorios primero para tener la información de las salas
-            await this.loadAuditoriums();
             await this.loadMovies();
             this.showStep(1);
             
         } catch (error) {
-            console.error('❌ Error cargando datos de booking:', error);
+            log('Error loading booking data', 'error', error);
             this.showError('Error cargando los datos de películas');
+        } finally {
+            showLoading(false);
         }
     }
 
     async loadMovies() {
         try {
-            console.log('🎬 Cargando películas...');
-            const response = await fetch(`${CONFIG.API_BASE_URL}/movies/`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
+            // Obtener películas desde la API
+            const response = await fetch(`${CONFIG.API_BASE_URL}/movies`);
             const data = await response.json();
-            console.log('📋 Películas recibidas:', data);
+            
+            log('Movies loaded:', 'info', data);
             
             const moviesGrid = document.getElementById('movies-grid');
-            if (!moviesGrid) {
-                console.error('❌ No se encontró movies-grid');
-                return;
-            }
+            if (!moviesGrid) return;
 
             moviesGrid.innerHTML = '';
 
             if (data.movies && data.movies.length > 0) {
-                // Filtrar solo películas activas
-                const activeMovies = data.movies.filter(movie => 
-                    movie.mov_status === 'active' || movie.mov_status === 'available'
-                );
-                
-                console.log(`✅ ${activeMovies.length} películas activas encontradas`);
-                
-                if (activeMovies.length > 0) {
-                    activeMovies.forEach(movie => {
-                        const movieCard = this.createMovieCard(movie);
-                        moviesGrid.appendChild(movieCard);
-                    });
-                } else {
-                    moviesGrid.innerHTML = '<p class="no-data">No hay películas activas disponibles</p>';
-                }
+                data.movies.forEach(movie => {
+                    const movieCard = this.createMovieCard(movie);
+                    moviesGrid.appendChild(movieCard);
+                });
             } else {
-                moviesGrid.innerHTML = '<p class="no-data">No hay películas disponibles</p>';
+                moviesGrid.innerHTML = '<p>No hay películas disponibles</p>';
             }
 
         } catch (error) {
-            console.error('❌ Error cargando películas:', error);
-            const moviesGrid = document.getElementById('movies-grid');
-            if (moviesGrid) {
-                moviesGrid.innerHTML = '<p class="error-message">Error cargando películas. Intenta de nuevo.</p>';
-            }
+            log('Error loading movies', 'error', error);
             throw error;
         }
     }
@@ -135,68 +114,46 @@ class Booking {
             }
 
             this.selectedMovie = movie;
-            console.log('✅ Película seleccionada:', movie);
+            log('Movie selected:', 'info', movie);
 
             // Cargar funciones para esta película
             await this.loadScreenings(movie.mov_id);
 
         } catch (error) {
-            console.error('❌ Error seleccionando película:', error);
+            log('Error selecting movie', 'error', error);
         }
     }
 
     async loadScreenings(movieId) {
         try {
-            console.log('🎭 Cargando funciones para película:', movieId);
+            const response = await fetch(`${CONFIG.API_BASE_URL}/screenings?movie_id=${movieId}`);
+            const data = await response.json();
             
-            // Usar el endpoint de búsqueda de screenings
-            const response = await fetch(`${CONFIG.API_BASE_URL}/screenings/search?movie_id=${movieId}`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const screenings = await response.json();
-            console.log('📅 Funciones recibidas:', screenings);
+            log('Screenings loaded:', 'info', data);
 
             const screeningsList = document.getElementById('screenings-list');
             const screeningsGrid = document.getElementById('screenings-grid');
             
-            if (!screeningsList || !screeningsGrid) {
-                console.error('❌ No se encontraron contenedores de funciones');
-                return;
-            }
+            if (!screeningsList || !screeningsGrid) return;
 
             screeningsGrid.innerHTML = '';
 
-            if (Array.isArray(screenings) && screenings.length > 0) {
-                // Filtrar funciones válidas (futuras y programadas)
-                const validScreenings = screenings.filter(screening => {
-                    const screeningDate = new Date(`${screening.scr_date}T${screening.scr_time}`);
-                    const now = new Date();
-                    return screeningDate > now && screening.scr_status === 'scheduled';
+            if (data.screenings && data.screenings.length > 0) {
+                data.screenings.forEach(screening => {
+                    const screeningCard = this.createScreeningCard(screening);
+                    screeningsGrid.appendChild(screeningCard);
                 });
+                screeningsList.style.display = 'block';
                 
-                if (validScreenings.length > 0) {
-                    console.log(`✅ ${validScreenings.length} funciones válidas encontradas`);
-                    
-                    validScreenings.forEach(screening => {
-                        const screeningCard = this.createScreeningCard(screening);
-                        screeningsGrid.appendChild(screeningCard);
-                    });
-                    
-                    screeningsList.style.display = 'block';
-                } else {
-                    screeningsGrid.innerHTML = '<p class="no-data">No hay funciones disponibles para esta película</p>';
-                    screeningsList.style.display = 'block';
-                }
+                // Mostrar botón siguiente
+                document.getElementById('next-step').style.display = 'inline-block';
             } else {
-                screeningsGrid.innerHTML = '<p class="no-data">No hay funciones programadas para esta película</p>';
+                screeningsGrid.innerHTML = '<p>No hay funciones disponibles para esta película</p>';
                 screeningsList.style.display = 'block';
             }
 
         } catch (error) {
-            console.error('❌ Error cargando funciones:', error);
+            log('Error loading screenings', 'error', error);
         }
     }
 
@@ -206,22 +163,15 @@ class Booking {
         card.setAttribute('data-screening-id', screening.scr_id);
         
         // Formatear fecha y hora
-        const screeningDate = new Date(`${screening.scr_date}T${screening.scr_time}`);
-        const dateStr = screeningDate.toLocaleDateString('es-ES', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long'
-        });
-        const timeStr = screeningDate.toLocaleTimeString('es-ES', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const date = new Date(screening.scr_start_time);
+        const dateStr = date.toLocaleDateString();
+        const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
         card.innerHTML = `
             <div class="screening-time">${timeStr}</div>
             <div class="screening-date">${dateStr}</div>
-            <div class="screening-auditorium">Sala: ${this.getAuditoriumName(screening.scr_aud_id)}</div>
-            <div class="screening-price">$${(screening.scr_price || 12.5).toFixed(2)}</div>
+            <div class="screening-auditorium">Sala: ${screening.aud_name || 'N/A'}</div>
+            <div class="screening-price">$${(screening.scr_ticket_price || 12.5).toFixed(2)}</div>
         `;
 
         card.addEventListener('click', () => this.selectScreening(screening));
@@ -244,10 +194,10 @@ class Booking {
         log('Screening selected:', 'info', screening);
     }
 
-    async nextStep() {
+    nextStep() {
         if (this.currentStep === 1 && this.selectedScreening) {
             this.goToStep(2);
-            await this.generateSeats();
+            this.generateSeats();
         } else if (this.currentStep === 2 && this.selectedSeats.length > 0) {
             this.goToStep(3);
             this.updateSummary();
@@ -312,31 +262,17 @@ class Booking {
         }
     }
 
-    async generateSeats() {
+    generateSeats() {
         const container = document.getElementById('seats-container');
         if (!container) return;
 
         container.innerHTML = '';
         
-        // Obtener información del auditorio seleccionado
-        const auditorium = this.auditoriums.find(aud => aud.aud_id === this.selectedScreening.scr_aud_id);
-        
-        let rows, seatsPerRow;
-        if (auditorium) {
-            rows = auditorium.aud_total_rows || 10;
-            seatsPerRow = auditorium.aud_seats_per_row || 10;
-            console.log(`🎭 Generando asientos para ${auditorium.aud_name}: ${rows}x${seatsPerRow}`);
-        } else {
-            // Valores por defecto si no se encuentra el auditorio
-            rows = 10;
-            seatsPerRow = 10;
-            console.warn('⚠️ Auditorio no encontrado, usando valores por defecto');
-        }
+        // Generar matriz de asientos (10x10 por ejemplo)
+        const rows = 10;
+        const seatsPerRow = 10;
         
         this.auditoriumSeats = [];
-
-        // Obtener asientos ocupados desde la API
-        const occupiedSeats = await this.getOccupiedSeats(this.selectedScreening.scr_id);
 
         for (let row = 0; row < rows; row++) {
             for (let seat = 0; seat < seatsPerRow; seat++) {
@@ -347,10 +283,8 @@ class Booking {
                 seatElement.textContent = seatId;
                 seatElement.setAttribute('data-seat-id', seatId);
                 
-                // Verificar si el asiento está ocupado (desde la API, no aleatorio)
-                const isOccupied = occupiedSeats.includes(seatId);
-                
-                if (isOccupied) {
+                // Simular algunos asientos ocupados (aleatorio)
+                if (Math.random() < 0.15) {
                     seatElement.className = 'seat occupied';
                 } else {
                     seatElement.addEventListener('click', () => this.toggleSeat(seatId, seatElement));
@@ -362,12 +296,10 @@ class Booking {
                     id: seatId,
                     row: String.fromCharCode(65 + row),
                     number: seat + 1,
-                    available: !isOccupied
+                    available: !seatElement.classList.contains('occupied')
                 });
             }
         }
-        
-        console.log(`✅ ${this.auditoriumSeats.length} asientos generados (${occupiedSeats.length} ocupados)`);
     }
 
     toggleSeat(seatId, seatElement) {
@@ -616,37 +548,6 @@ Su boleto PDF se descargará automáticamente.`);
         }
     }
 
-    async loadAuditoriums() {
-        try {
-            console.log('🏛️ Cargando auditorios...');
-            const response = await fetch(`${CONFIG.API_BASE_URL}/auditoriums/`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            console.log('🎭 Auditorios recibidos:', data);
-            
-            if (data.auditoriums && Array.isArray(data.auditoriums)) {
-                this.auditoriums = data.auditoriums;
-                console.log(`✅ ${this.auditoriums.length} auditorios cargados`);
-            } else {
-                console.warn('⚠️ No se encontraron auditorios');
-                this.auditoriums = [];
-            }
-
-        } catch (error) {
-            console.error('❌ Error cargando auditorios:', error);
-            this.auditoriums = [];
-        }
-    }
-
-    getAuditoriumName(auditoriumId) {
-        const auditorium = this.auditoriums.find(aud => aud.aud_id === auditoriumId);
-        return auditorium ? auditorium.aud_name : `Sala ${auditoriumId}`;
-    }
-
     resetBooking() {
         this.currentStep = 1;
         this.selectedMovie = null;
@@ -669,55 +570,14 @@ Su boleto PDF se descargará automáticamente.`);
             `;
         }
     }
-
-    async getOccupiedSeats(screeningId) {
-        try {
-            console.log('🎟️ Consultando asientos ocupados para función:', screeningId);
-            
-            // Consultar tickets vendidos para esta función
-            const response = await fetch(`${CONFIG.API_BASE_URL}/tickets/?screening_id=${screeningId}`);
-            
-            if (!response.ok) {
-                console.warn(`⚠️ No se pudieron obtener tickets: ${response.status}`);
-                return []; // Si no se pueden obtener, asumir que están todos disponibles
-            }
-            
-            const data = await response.json();
-            console.log('🎫 Tickets encontrados:', data);
-            
-            // Extraer números de asiento de los tickets
-            const occupiedSeats = [];
-            if (data.tickets && Array.isArray(data.tickets)) {
-                data.tickets.forEach(ticket => {
-                    if (ticket.ticket_seat_number) {
-                        occupiedSeats.push(ticket.ticket_seat_number);
-                    }
-                });
-            }
-            
-            console.log(`🚫 ${occupiedSeats.length} asientos ocupados:`, occupiedSeats);
-            return occupiedSeats;
-            
-        } catch (error) {
-            console.error('❌ Error consultando asientos ocupados:', error);
-            return []; // En caso de error, asumir que están disponibles
-        }
-    }
 }
 
-// Crear instancia global con manejo de errores
-try {
-    window.BookingClass = Booking;
-    window.Booking = new Booking();
-    console.log('✅ Booking component initialized successfully');
-} catch (error) {
-    console.error('❌ Error initializing Booking component:', error);
-    window.Booking = null;
-}
+// Crear instancia global
+window.Booking = new Booking();
 
 // Auto-cargar datos cuando se navega a booking
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.location.hash === '#booking' && window.Booking) {
+    if (window.location.hash === '#booking') {
         window.Booking.loadData();
     }
 });

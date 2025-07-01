@@ -190,6 +190,34 @@ const AuditoriumsAPI = {
     }
 };
 
+// API para Sales
+const SalesAPI = {
+    async getAll(skip = 0, limit = 100) {
+        return api.get(CONFIG.ENDPOINTS.SALES, { skip, limit });
+    },
+
+    async getById(id) {
+        return api.get(`${CONFIG.ENDPOINTS.SALES}/${id}`);
+    },
+
+    async create(data) {
+        return api.post(CONFIG.ENDPOINTS.SALES, data);
+    },
+
+    async createWithTickets(data) {
+        // Crear venta con tickets incluidos
+        return api.post(`${CONFIG.ENDPOINTS.SALES}/with-tickets`, data);
+    },
+
+    async update(id, data) {
+        return api.put(`${CONFIG.ENDPOINTS.SALES}/${id}`, data);
+    },
+
+    async delete(id) {
+        return api.delete(`${CONFIG.ENDPOINTS.SALES}/${id}`);
+    }
+};
+
 // Manejo de errores globales
 window.addEventListener('unhandledrejection', event => {
     log('Unhandled promise rejection', 'error', event.reason);
@@ -218,6 +246,7 @@ window.API = {
     tickets: TicketsAPI,
     screenings: ScreeningsAPI,
     auditoriums: AuditoriumsAPI,
+    sales: SalesAPI,
     
     // Métodos directos del cliente
     get: (endpoint, params) => api.get(endpoint, params),
