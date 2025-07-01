@@ -12,6 +12,8 @@ class MovieRepository:
     async def get_all(self, skip: int = 0, limit: int = 100, include_inactive: bool = False) -> List[Dict[str, Any]]:
         """Obtener todas las películas con paginación"""
         try:
+            print(f"🎬 Repository get_all called with: skip={skip}, limit={limit}, include_inactive={include_inactive}")
+            
             if include_inactive:
                 # Obtener todas las películas (activas e inactivas)
                 query = """
@@ -21,6 +23,7 @@ class MovieRepository:
                 ORDER BY mov_status DESC, mov_created DESC
                 LIMIT %s OFFSET %s
                 """
+                print("🎬 Using query for ALL movies (active + inactive)")
             else:
                 # Solo películas activas (comportamiento original)
                 query = """
@@ -31,7 +34,16 @@ class MovieRepository:
                 ORDER BY mov_created DESC
                 LIMIT %s OFFSET %s
                 """
+                print("🎬 Using query for ACTIVE movies only")
+            
             result = self.db.execute_safe(query, (limit, skip))
+            print(f"🎬 Repository returned {len(result)} movies")
+            
+            # Debug: mostrar estado de cada película
+            for movie in result:
+                print(f"  - {movie['mov_title']}: {movie['mov_status']}")
+            
+            return result
             return result
         except Exception as e:
             raise Exception(f"Error getting movies: {str(e)}")

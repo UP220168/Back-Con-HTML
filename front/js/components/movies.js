@@ -27,15 +27,10 @@ class Movies {
 
         // Filtros
         const genreFilter = document.getElementById('genre-filter');
-        const statusFilter = document.getElementById('status-filter');
         const clearFiltersBtn = document.getElementById('clear-filters');
 
         if (genreFilter) {
             genreFilter.addEventListener('change', () => this.applyFilters());
-        }
-
-        if (statusFilter) {
-            statusFilter.addEventListener('change', () => this.applyFilters());
         }
 
         if (clearFiltersBtn) {
@@ -55,13 +50,23 @@ class Movies {
             log('Loading movies data...');
 
             // Cargar películas desde la API (incluyendo inactivas para administración)
-            const response = await fetch(`${CONFIG.API_BASE_URL}/movies?include_inactive=true`);
+            // Agregar timestamp para evitar cache
+            const timestamp = new Date().getTime();
+            const response = await fetch(`${CONFIG.API_BASE_URL}/movies?include_inactive=true&_t=${timestamp}`);
             if (!response.ok) {
                 throw new Error('Error al cargar películas');
             }
 
             const data = await response.json();
             log('Movies loaded:', 'info', data);
+            
+            // Debug: contar películas por estado
+            const activeMovies = (data.movies || []).filter(m => m.mov_status === 'active');
+            const inactiveMovies = (data.movies || []).filter(m => m.mov_status === 'inactive');
+            console.log(`📊 Películas encontradas: ${data.movies?.length || 0} total | ${activeMovies.length} activas | ${inactiveMovies.length} inactivas`);
+            
+            // Debug: mostrar URL completa que se está llamando
+            console.log(`🔗 URL llamada: ${CONFIG.API_BASE_URL}/movies?include_inactive=true&_t=${timestamp}`);
 
             this.movies = data.movies || [];
             this.filteredMovies = [...this.movies];
@@ -170,7 +175,6 @@ class Movies {
     applyFilters(searchTerm = null) {
         const search = searchTerm || document.getElementById('movie-search')?.value.toLowerCase() || '';
         const genreFilter = document.getElementById('genre-filter')?.value || '';
-        const statusFilter = document.getElementById('status-filter')?.value || '';
 
         this.filteredMovies = this.movies.filter(movie => {
             const matchesSearch = !search || 
@@ -178,9 +182,8 @@ class Movies {
                 movie.mov_genre.toLowerCase().includes(search);
             
             const matchesGenre = !genreFilter || movie.mov_genre === genreFilter;
-            const matchesStatus = !statusFilter || movie.mov_status === statusFilter;
 
-            return matchesSearch && matchesGenre && matchesStatus;
+            return matchesSearch && matchesGenre;
         });
 
         this.renderMovies();
@@ -191,11 +194,9 @@ class Movies {
         // Limpiar inputs
         const searchInput = document.getElementById('movie-search');
         const genreFilter = document.getElementById('genre-filter');
-        const statusFilter = document.getElementById('status-filter');
 
         if (searchInput) searchInput.value = '';
         if (genreFilter) genreFilter.value = '';
-        if (statusFilter) statusFilter.value = '';
 
         // Mostrar todas las películas
         this.filteredMovies = [...this.movies];
@@ -341,7 +342,7 @@ class Movies {
             return;
         }
 
-        if (!confirm(`¿Estás seguro de que quieres desactivar la película "${movie.mov_title}"?\n\nEsta acción cambiará el estado de la película a inactivo.`)) {
+        if (!confirm(`¿Estás seguro de que quieres desactivar la película "${movie.mov_title}"?\n\nEsta acción eliminara la pelicula de forma permanente`)) {
             return;
         }
 
