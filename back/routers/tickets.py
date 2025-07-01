@@ -62,7 +62,7 @@ def delete_ticket(ticket_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/screening/{screening_id}", response_model=List[Ticket])
-def get_tickets_by_screening(screening_id: int):
+def get_tickets_by_screening(screening_id: str):
     """Get all tickets for a specific screening"""
     try:
         return ticket_service.get_tickets_by_screening(screening_id)

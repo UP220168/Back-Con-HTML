@@ -2741,3 +2741,4 @@ scr_time
 2025-07-01 18:19:15,227 - INFO - Query executed successfully: 
             SELECT scr_id, scr_mov_id, scr_aud_id...
 2025-07-01 18:19:15,228 - ERROR - Error in create_screening: combine() argument 2 must be datetime.time, not datetime.timedelta
+2025-07-01 16:17:13,617 - ERROR - Error creating connection pool: 2003 (HY000): Can't connect to MySQL server on 'localhost:3306' (10061)

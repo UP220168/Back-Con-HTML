@@ -471,52 +471,61 @@ class Booking {
             const customerName = formData.get('customer-name') || document.getElementById('customer-name').value;
             const customerPhone = formData.get('customer-phone') || document.getElementById('customer-phone').value;
 
-            // Crear la compra completa con tickets y venta
+            // Validar campos requeridos
+            if (!customerEmail || !customerName) {
+                throw new Error('Por favor complete todos los campos requeridos (nombre y email)');
+            }
+
+            if (this.selectedSeats.length === 0) {
+                throw new Error('Por favor seleccione al menos un asiento');
+            }
+
+            // Crear la compra completa con tickets y venta usando el endpoint especializado
             const purchaseData = {
                 customer_email: customerEmail,
                 customer_name: customerName,
-                customer_phone: customerPhone,
+                customer_phone: customerPhone || '',
                 scr_id: this.selectedScreening.scr_id,
                 seats: this.selectedSeats.map(seat => seat.id),
                 payment_method: "cash", // Por defecto efectivo
                 total_amount: this.selectedSeats.length * (this.selectedScreening.scr_price || 12.5)
             };
 
-            log('Processing purchase:', 'info', purchaseData);
+            console.log('🛒 Procesando compra:', purchaseData);
 
-            // Llamar al endpoint de compra completa (simplificado)
-            const response = await fetch(`${CONFIG.API_BASE_URL}/sales`, {
+            // Usar el endpoint especializado para compra simplificada
+            const response = await fetch(`${CONFIG.API_BASE_URL}/sales/purchase-simple`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    customer_email: customerEmail,
-                    customer_name: customerName,
-                    scr_id: this.selectedScreening.scr_id,
-                    total_amount: purchaseData.total_amount
-                })
+                body: JSON.stringify(purchaseData)
             });
 
             if (response.ok) {
                 const result = await response.json();
-                log('Purchase successful:', 'info', result);
+                console.log('✅ Compra exitosa:', result);
                 
-                // Generar PDF del boleto con los datos disponibles
-                this.generateTicketPDF(purchaseData);
+                // Generar PDF del boleto con los datos de la compra
+                this.generateTicketPDF(purchaseData, result);
                 
-                // Mostrar mensaje de éxito
+                // Mostrar mensaje de éxito con detalles
                 this.showSuccessMessage(result);
                 
-                this.resetBooking();
+                // Resetear el formulario y volver al inicio
+                setTimeout(() => {
+                    this.resetBooking();
+                }, 3000);
+                
             } else {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Error en la compra');
+                console.error('❌ Error en la compra:', errorData);
+                throw new Error(errorData.detail || 'Error procesando la compra');
             }
 
         } catch (error) {
-            log('Error processing purchase', 'error', error);
-            alert('Error al procesar la compra. Por favor intente de nuevo.');
+            console.error('❌ Error procesando compra:', error);
+            alert(`Error al procesar la compra: ${error.message}\nPor favor intente de nuevo.`);
         } finally {
             showLoading(false);
         }
@@ -524,24 +533,96 @@ class Booking {
 
     showSuccessMessage(result) {
         const saleId = result?.sale_id || 'N/A';
-        const ticketCount = this.selectedSeats.length;
+        const ticketCount = result?.ticket_ids?.length || this.selectedSeats.length;
+        const ticketIds = result?.ticket_ids || [];
+        const pdfGenerated = result?.pdf_generated || false;
         
-        alert(`¡Compra realizada exitosamente! 
+        console.log('🎉 Compra completada exitosamente:', result);
         
-ID de Venta: ${saleId}
-Boletos generados: ${ticketCount}
+        // Crear un mensaje más detallado
+        let message = `¡Compra realizada exitosamente! 🎬\n\n`;
+        message += `📋 ID de Venta: ${saleId}\n`;
+        message += `🎟️ Boletos generados: ${ticketCount}\n`;
+        message += `💺 Asientos: ${this.selectedSeats.map(seat => seat.id).join(', ')}\n`;
+        message += `🎭 Película: ${this.selectedMovie?.mov_title || 'N/A'}\n`;
+        message += `💰 Total pagado: $${(this.selectedSeats.length * (this.selectedScreening?.scr_price || 12.5)).toFixed(2)} MXN\n\n`;
         
-Su boleto PDF se descargará automáticamente.`);
+        if (pdfGenerated) {
+            message += `✅ Boleto generado exitosamente\n`;
+            message += `📄 Puede descargar su boleto haciendo clic en "Descargar Boleto"\n\n`;
+        } else {
+            message += `⚠️ Boleto en proceso de generación\n\n`;
+        }
+        
+        message += `🎪 ¡Disfrute la función!`;
+
+        alert(message);
+        
+        // Si el PDF fue generado, mostrar botón de descarga
+        if (pdfGenerated && saleId !== 'N/A') {
+            this.showDownloadButton(saleId);
+        }
     }
 
-    generateTicketPDF(purchaseData) {
+    showDownloadButton(saleId) {
+        // Crear botón de descarga temporal
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = '📄 Descargar Boleto';
+        downloadBtn.className = 'btn btn-success';
+        downloadBtn.style.margin = '10px';
+        downloadBtn.onclick = () => this.downloadTicket(saleId);
+        
+        // Agregar al contenedor de navegación
+        const navContainer = document.querySelector('.booking-navigation');
+        if (navContainer) {
+            navContainer.appendChild(downloadBtn);
+            
+            // Remover el botón después de 30 segundos
+            setTimeout(() => {
+                if (downloadBtn.parentNode) {
+                    downloadBtn.parentNode.removeChild(downloadBtn);
+                }
+            }, 30000);
+        }
+    }
+
+    async downloadTicket(saleId) {
+        try {
+            console.log(`📄 Descargando boleto para venta: ${saleId}`);
+            
+            const response = await fetch(`${CONFIG.API_BASE_URL}/sales/download-ticket/${saleId}`);
+            
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `boleto_${saleId}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                console.log('✅ Boleto descargado exitosamente');
+            } else {
+                throw new Error('Error al descargar el boleto');
+            }
+        } catch (error) {
+            console.error('❌ Error descargando boleto:', error);
+            alert('Error al descargar el boleto. Por favor intente más tarde.');
+        }
+    }
+
+    generateTicketPDF(purchaseData, result = null) {
         try {
             // Verificar que jsPDF esté disponible
             if (typeof window.jsPDF === 'undefined') {
-                console.error('jsPDF no está cargado');
+                console.error('❌ jsPDF no está cargado');
+                alert('Error: No se pudo generar el PDF. jsPDF no está disponible.');
                 return;
             }
 
+            console.log('📄 Generando PDF del boleto...');
             const { jsPDF } = window;
             const doc = new jsPDF();
 
@@ -564,8 +645,19 @@ Su boleto PDF se descargará automáticamente.`);
             doc.setLineWidth(0.5);
             doc.line(marginLeft, currentY, pageWidth - marginLeft, currentY);
 
+            // Información de la compra (si está disponible)
+            if (result) {
+                currentY += 15;
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`ID de Venta: ${result.sale_id || 'N/A'}`, marginLeft, currentY);
+                currentY += 6;
+                const ticketIds = result.ticket_ids || [];
+                doc.text(`IDs de Boletos: ${ticketIds.join(', ') || 'N/A'}`, marginLeft, currentY);
+                currentY += 10;
+            }
+
             // Información de la película
-            currentY += 20;
             doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
             
@@ -603,7 +695,15 @@ Su boleto PDF se descargará automáticamente.`);
             doc.text(`Cliente: ${purchaseData.customer_name}`, marginLeft, currentY);
             currentY += 8;
             doc.text(`Email: ${purchaseData.customer_email}`, marginLeft, currentY);
+            if (purchaseData.customer_phone) {
+                currentY += 8;
+                doc.text(`Teléfono: ${purchaseData.customer_phone}`, marginLeft, currentY);
+            }
             currentY += 12;
+
+            // Método de pago
+            doc.text(`Método de pago: ${purchaseData.payment_method.toUpperCase()}`, marginLeft, currentY);
+            currentY += 8;
 
             // Total
             doc.setFontSize(14);
@@ -626,16 +726,17 @@ Su boleto PDF se descargará automáticamente.`);
             doc.text('No se admiten devoluciones ni cambios.', marginLeft, currentY);
 
             // Generar nombre del archivo
-            const fileName = `boleto_${this.selectedMovie?.mov_title || 'pelicula'}_${Date.now()}.pdf`;
+            const movieTitle = this.selectedMovie?.mov_title?.replace(/[^a-zA-Z0-9]/g, '_') || 'pelicula';
+            const fileName = `boleto_${movieTitle}_${Date.now()}.pdf`;
             
             // Descargar el PDF
             doc.save(fileName);
             
-            log('PDF generado exitosamente', 'info', fileName);
+            console.log('✅ PDF generado exitosamente:', fileName);
 
         } catch (error) {
-            log('Error generando PDF', 'error', error);
-            alert('Error al generar el boleto PDF. La compra se realizó correctamente.');
+            console.error('❌ Error generando PDF:', error);
+            alert('Error al generar el boleto PDF. La compra se realizó correctamente, pero no se pudo crear el archivo PDF.');
         }
     }
 
@@ -697,8 +798,8 @@ Su boleto PDF se descargará automáticamente.`);
         try {
             console.log('🎟️ Consultando asientos ocupados para función:', screeningId);
             
-            // Consultar tickets vendidos para esta función
-            const response = await fetch(`${CONFIG.API_BASE_URL}/tickets/?screening_id=${screeningId}`);
+            // Usar el endpoint correcto que filtra por screening_id
+            const response = await fetch(`${CONFIG.API_BASE_URL}/tickets/screening/${screeningId}`);
             
             if (!response.ok) {
                 console.warn(`⚠️ No se pudieron obtener tickets: ${response.status}`);
@@ -710,10 +811,15 @@ Su boleto PDF se descargará automáticamente.`);
             
             // Extraer números de asiento de los tickets
             const occupiedSeats = [];
-            if (data.tickets && Array.isArray(data.tickets)) {
-                data.tickets.forEach(ticket => {
-                    if (ticket.ticket_seat_number) {
-                        occupiedSeats.push(ticket.ticket_seat_number);
+            
+            // La respuesta es directamente un array de tickets
+            if (Array.isArray(data)) {
+                data.forEach(ticket => {
+                    // Solo incluir tickets vendidos
+                    if (ticket.tic_status === 'sold') {
+                        // Combinar tic_row y tic_seat para formar el ID del asiento (ej: "A1")
+                        const seatId = `${ticket.tic_row}${ticket.tic_seat}`;
+                        occupiedSeats.push(seatId);
                     }
                 });
             }
