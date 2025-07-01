@@ -40,7 +40,6 @@ class Booking {
 
     async loadData() {
         try {
-            console.log('📊 Cargando datos de booking...');
             
             // Cargar auditorios primero para tener la información de las salas
             await this.loadAuditoriums();
@@ -55,7 +54,6 @@ class Booking {
 
     async loadMovies() {
         try {
-            console.log('🎬 Cargando películas...');
             const response = await fetch(`${CONFIG.API_BASE_URL}/movies/`);
             
             if (!response.ok) {
@@ -63,7 +61,6 @@ class Booking {
             }
             
             const data = await response.json();
-            console.log('📋 Películas recibidas:', data);
             
             const moviesGrid = document.getElementById('movies-grid');
             if (!moviesGrid) {
@@ -79,7 +76,6 @@ class Booking {
                     movie.mov_status === 'active' || movie.mov_status === 'available'
                 );
                 
-                console.log(`✅ ${activeMovies.length} películas activas encontradas`);
                 
                 if (activeMovies.length > 0) {
                     activeMovies.forEach(movie => {
@@ -135,7 +131,6 @@ class Booking {
             }
 
             this.selectedMovie = movie;
-            console.log('✅ Película seleccionada:', movie);
 
             // Cargar funciones para esta película
             await this.loadScreenings(movie.mov_id);
@@ -147,7 +142,6 @@ class Booking {
 
     async loadScreenings(movieId) {
         try {
-            console.log('🎭 Cargando funciones para película:', movieId);
             
             // Usar el endpoint de búsqueda de screenings
             const response = await fetch(`${CONFIG.API_BASE_URL}/screenings/search?movie_id=${movieId}`);
@@ -157,7 +151,6 @@ class Booking {
             }
             
             const screenings = await response.json();
-            console.log('📅 Funciones recibidas:', screenings);
 
             const screeningsList = document.getElementById('screenings-list');
             const screeningsGrid = document.getElementById('screenings-grid');
@@ -175,7 +168,6 @@ class Booking {
                     screening.scr_mov_id === movieId
                 );
                 
-                console.log(`🔍 Validación: ${screenings.length} funciones recibidas, ${movieScreenings.length} corresponden a la película`);
                 
                 // Filtrar funciones válidas (futuras y programadas)
                 const validScreenings = movieScreenings.filter(screening => {
@@ -185,7 +177,6 @@ class Booking {
                 });
                 
                 if (validScreenings.length > 0) {
-                    console.log(`✅ ${validScreenings.length} funciones válidas encontradas para ${this.selectedMovie.mov_title}`);
                     
                     validScreenings.forEach(screening => {
                         const screeningCard = this.createScreeningCard(screening);
@@ -248,7 +239,6 @@ class Booking {
         }
 
         this.selectedScreening = screening;
-        console.log('✅ Función seleccionada:', screening);
         
         // Actualizar navegación para mostrar el botón siguiente
         this.updateNavigation();
@@ -335,7 +325,6 @@ class Booking {
         if (auditorium) {
             rows = auditorium.aud_total_rows || 10;
             seatsPerRow = auditorium.aud_seats_per_row || 10;
-            console.log(`🎭 Generando asientos para ${auditorium.aud_name}: ${rows}x${seatsPerRow}`);
         } else {
             // Valores por defecto si no se encuentra el auditorio
             rows = 10;
@@ -377,7 +366,6 @@ class Booking {
             }
         }
         
-        console.log(`✅ ${this.auditoriumSeats.length} asientos generados (${occupiedSeats.length} ocupados)`);
     }
 
     toggleSeat(seatId, seatElement) {
@@ -403,7 +391,6 @@ class Booking {
             }
         }
 
-        console.log('🪑 Asientos seleccionados:', this.selectedSeats);
         this.updateNavigation();
     }
 
@@ -491,7 +478,6 @@ class Booking {
                 total_amount: this.selectedSeats.length * (this.selectedScreening.scr_price || 12.5)
             };
 
-            console.log('🛒 Procesando compra:', purchaseData);
 
             // Usar el endpoint especializado para compra simplificada
             const response = await fetch(`${CONFIG.API_BASE_URL}/sales/purchase-simple`, {
@@ -504,7 +490,6 @@ class Booking {
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('✅ Compra exitosa:', result);
                 
                 // Generar PDF del boleto con los datos de la compra
                 this.generateTicketPDF(purchaseData, result);
@@ -536,8 +521,6 @@ class Booking {
         const ticketCount = result?.ticket_ids?.length || this.selectedSeats.length;
         const ticketIds = result?.ticket_ids || [];
         
-        console.log('🎉 Compra completada exitosamente:', result);
-        
         // Crear un mensaje más detallado
         let message = `¡Compra realizada exitosamente! 🎬\n\n`;
         message += `🎪 ¡Disfrute la función!`;
@@ -556,7 +539,6 @@ class Booking {
                 return;
             }
 
-            console.log('📄 Generando PDF del boleto con jsPDF...');
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
@@ -725,7 +707,7 @@ class Booking {
             currentY = pageHeight - 20;
             doc.setFontSize(12);
             doc.setTextColor(40, 40, 40);
-            doc.text('¡DISFRUTE SU FUNCIÓN! 🍿🎬', marginLeft, currentY);
+            doc.text('¡DISFRUTE SU FUNCIÓN!', marginLeft, currentY);
             
             currentY += 6;
             doc.setFontSize(7);
@@ -737,7 +719,6 @@ class Booking {
             const fileName = `boleto_${result?.sale_id || 'compra'}_${now.getTime()}.pdf`;
             doc.save(fileName);
             
-            console.log('✅ PDF generado y descargado exitosamente:', fileName);
             
             // Mostrar mensaje de confirmación
             setTimeout(() => {
@@ -752,7 +733,6 @@ class Booking {
 
     async loadAuditoriums() {
         try {
-            console.log('🏛️ Cargando auditorios...');
             const response = await fetch(`${CONFIG.API_BASE_URL}/auditoriums/`);
             
             if (!response.ok) {
@@ -760,13 +740,10 @@ class Booking {
             }
             
             const data = await response.json();
-            console.log('🎭 Auditorios recibidos:', data);
             
             if (data.auditoriums && Array.isArray(data.auditoriums)) {
                 this.auditoriums = data.auditoriums;
-                console.log(`✅ ${this.auditoriums.length} auditorios cargados`);
             } else {
-                console.warn('⚠️ No se encontraron auditorios');
                 this.auditoriums = [];
             }
 
@@ -806,7 +783,6 @@ class Booking {
 
     async getOccupiedSeats(screeningId) {
         try {
-            console.log('🎟️ Consultando asientos ocupados para función:', screeningId);
             
             // Usar el endpoint correcto que filtra por screening_id
             const response = await fetch(`${CONFIG.API_BASE_URL}/tickets/screening/${screeningId}`);
@@ -817,7 +793,6 @@ class Booking {
             }
             
             const data = await response.json();
-            console.log('🎫 Tickets encontrados:', data);
             
             // Extraer números de asiento de los tickets
             const occupiedSeats = [];
@@ -834,7 +809,6 @@ class Booking {
                 });
             }
             
-            console.log(`🚫 ${occupiedSeats.length} asientos ocupados:`, occupiedSeats);
             return occupiedSeats;
             
         } catch (error) {
@@ -848,7 +822,6 @@ class Booking {
 try {
     window.BookingClass = Booking;
     window.Booking = new Booking();
-    console.log('✅ Booking component initialized successfully');
 } catch (error) {
     console.error('❌ Error initializing Booking component:', error);
     window.Booking = null;
