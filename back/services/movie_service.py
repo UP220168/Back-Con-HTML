@@ -12,7 +12,7 @@ class MovieService:
     def __init__(self):
         self.repository = movie_repository
     
-    async def get_movies(self, skip: int = 0, limit: int = 100) -> Dict[str, Any]:
+    async def get_movies(self, skip: int = 0, limit: int = 100, include_inactive: bool = False) -> Dict[str, Any]:
         """Obtener lista de películas con paginación"""
         try:
             # Validar parámetros
@@ -22,8 +22,8 @@ class MovieService:
                 raise HTTPException(status_code=400, detail="Limit debe estar entre 1 y 100")
             
             # Obtener películas y total
-            movies = await self.repository.get_all(skip, limit)
-            total = await self.repository.count_total()
+            movies = await self.repository.get_all(skip, limit, include_inactive)
+            total = await self.repository.count_total(include_inactive)
             
             # Convertir a modelos Pydantic
             movie_list = [self._dict_to_movie_summary(movie) for movie in movies]

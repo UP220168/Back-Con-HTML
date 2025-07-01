@@ -54,8 +54,8 @@ class Movies {
             showLoading(true);
             log('Loading movies data...');
 
-            // Cargar películas desde la API
-            const response = await fetch(`${CONFIG.API_BASE_URL}/movies`);
+            // Cargar películas desde la API (incluyendo inactivas para administración)
+            const response = await fetch(`${CONFIG.API_BASE_URL}/movies?include_inactive=true`);
             if (!response.ok) {
                 throw new Error('Error al cargar películas');
             }
@@ -108,6 +108,28 @@ class Movies {
         const card = document.createElement('div');
         card.className = 'movie-item';
         
+        // Determinar las acciones según el estado de la película
+        let actionButtons = '';
+        if (movie.mov_status === 'active') {
+            actionButtons = `
+                <button class="btn-small btn-edit" onclick="editMovie('${movie.mov_id}')">
+                    Editar
+                </button>
+                <button class="btn-small btn-delete" onclick="deactivateMovie('${movie.mov_id}')">
+                    Desactivar
+                </button>
+            `;
+        } else {
+            actionButtons = `
+                <button class="btn-small btn-edit" onclick="editMovie('${movie.mov_id}')">
+                    Editar
+                </button>
+                <button class="btn-small btn-success" onclick="reactivateMovie('${movie.mov_id}')">
+                    Reactivar
+                </button>
+            `;
+        }
+        
         card.innerHTML = `
             <div class="movie-title">${movie.mov_title}</div>
             <div class="movie-details">
@@ -133,12 +155,7 @@ class Movies {
                 </div>
             </div>
             <div class="movie-actions">
-                <button class="btn-small btn-edit" onclick="Movies.editMovie('${movie.mov_id}')">
-                    Editar
-                </button>
-                <button class="btn-small btn-delete" onclick="Movies.deleteMovie('${movie.mov_id}')">
-                    Eliminar
-                </button>
+                ${actionButtons}
             </div>
         `;
 
@@ -251,14 +268,19 @@ class Movies {
         try {
             showLoading(true);
 
-            const formData = new FormData(event.target);
+            // Obtener valores directamente de los elementos del formulario
             const movieData = {
-                mov_title: formData.get('mov_title'),
-                mov_duration: parseInt(formData.get('mov_duration')),
-                mov_classification: formData.get('mov_classification'),
-                mov_genre: formData.get('mov_genre'),
-                mov_status: formData.get('mov_status')
+                mov_title: document.getElementById('movie-title').value,
+                mov_duration: parseInt(document.getElementById('movie-duration').value),
+                mov_classification: document.getElementById('movie-classification').value,
+                mov_genre: document.getElementById('movie-genre').value,
+                mov_status: document.getElementById('movie-status').value
             };
+
+            // Validar que los campos requeridos estén llenos
+            if (!movieData.mov_title || !movieData.mov_duration || !movieData.mov_classification || !movieData.mov_genre) {
+                throw new Error('Por favor complete todos los campos requeridos');
+            }
 
             log('Submitting movie data:', 'info', movieData);
 
@@ -298,7 +320,7 @@ class Movies {
             await this.loadData();
 
             // Mostrar mensaje de éxito
-            alert(this.currentMovie ? 'Película actualizada correctamente' : 'Película creada correctamente');
+            alert(this.currentMovie ? 'Película actualizada correctamente' : 'Película actualizada correctamente');
 
         } catch (error) {
             log('Error saving movie', 'error', error);
@@ -319,7 +341,7 @@ class Movies {
             return;
         }
 
-        if (!confirm(`¿Estás seguro de que quieres eliminar la película "${movie.mov_title}"?`)) {
+        if (!confirm(`¿Estás seguro de que quieres desactivar la película "${movie.mov_title}"?\n\nEsta acción cambiará el estado de la película a inactivo.`)) {
             return;
         }
 
@@ -332,19 +354,64 @@ class Movies {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Error al eliminar la película');
+                throw new Error(errorData.detail || 'Error al desactivar la película');
             }
 
-            log('Movie deleted successfully');
+            log('Movie deactivated successfully');
 
             // Recargar datos
             await this.loadData();
 
-            alert('Película eliminada correctamente');
+            alert('Película desactivada correctamente');
 
         } catch (error) {
-            log('Error deleting movie', 'error', error);
-            alert('Error al eliminar la película: ' + error.message);
+            log('Error deactivating movie', 'error', error);
+            alert('Error al desactivar la película: ' + error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async reactivateMovie(movieId) {
+        const movie = this.movies.find(m => m.mov_id === movieId);
+        if (!movie) {
+            alert('Película no encontrada');
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de que quieres reactivar la película "${movie.mov_title}"?`)) {
+            return;
+        }
+
+        try {
+            showLoading(true);
+
+            // Actualizar el estado a activo
+            const response = await fetch(`${CONFIG.API_BASE_URL}/movies/${movieId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    mov_status: 'active'
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error al reactivar la película');
+            }
+
+            log('Movie reactivated successfully');
+
+            // Recargar datos
+            await this.loadData();
+
+            alert('Película reactivada correctamente');
+
+        } catch (error) {
+            log('Error reactivating movie', 'error', error);
+            alert('Error al reactivar la película: ' + error.message);
         } finally {
             showLoading(false);
         }
@@ -377,6 +444,30 @@ class Movies {
 function closeMovieModal() {
     if (window.Movies) {
         window.Movies.closeMovieModal();
+    }
+}
+
+function editMovie(movieId) {
+    if (window.Movies) {
+        window.Movies.editMovie(movieId);
+    }
+}
+
+function deleteMovie(movieId) {
+    if (window.Movies) {
+        window.Movies.deleteMovie(movieId);
+    }
+}
+
+function deactivateMovie(movieId) {
+    if (window.Movies) {
+        window.Movies.deleteMovie(movieId);
+    }
+}
+
+function reactivateMovie(movieId) {
+    if (window.Movies) {
+        window.Movies.reactivateMovie(movieId);
     }
 }
 

@@ -87,6 +87,25 @@ body {
     border-color: #95a5a6;
 }
 
+.btn-success {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(46, 204, 113, 0.3);
+}
+
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.5);
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
 /* Inputs */
 input[type="text"],
 input[type="email"],

@@ -13,15 +13,17 @@ router = APIRouter(tags=["movies"])
 @router.get("/", response_model=dict)
 async def get_movies(
     skip: int = Query(0, ge=0, description="Elementos a saltar"),
-    limit: int = Query(10, ge=1, le=100, description="Límite de elementos")
+    limit: int = Query(10, ge=1, le=100, description="Límite de elementos"),
+    include_inactive: bool = Query(False, description="Incluir películas inactivas")
 ):
     """
     Obtener lista de películas con paginación
     
     - **skip**: número de elementos a omitir (para paginación)
     - **limit**: número máximo de elementos a devolver (1-100)
+    - **include_inactive**: incluir películas inactivas en el resultado
     """
-    return await movie_service.get_movies(skip=skip, limit=limit)
+    return await movie_service.get_movies(skip=skip, limit=limit, include_inactive=include_inactive)
 
 # GET /api/movies/search - Buscar películas
 @router.get("/search", response_model=List[MovieSummary])

@@ -9,17 +9,28 @@ class MovieRepository:
     def __init__(self):
         self.db = database
     
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_all(self, skip: int = 0, limit: int = 100, include_inactive: bool = False) -> List[Dict[str, Any]]:
         """Obtener todas las películas con paginación"""
         try:
-            query = """
-            SELECT mov_id, mov_title, mov_classification, mov_duration, 
-                   mov_description, mov_genre, mov_status, mov_created, mov_updated
-            FROM tb_movie 
-            WHERE mov_status = 'active'
-            ORDER BY mov_created DESC
-            LIMIT %s OFFSET %s
-            """
+            if include_inactive:
+                # Obtener todas las películas (activas e inactivas)
+                query = """
+                SELECT mov_id, mov_title, mov_classification, mov_duration, 
+                       mov_description, mov_genre, mov_status, mov_created, mov_updated
+                FROM tb_movie 
+                ORDER BY mov_status DESC, mov_created DESC
+                LIMIT %s OFFSET %s
+                """
+            else:
+                # Solo películas activas (comportamiento original)
+                query = """
+                SELECT mov_id, mov_title, mov_classification, mov_duration, 
+                       mov_description, mov_genre, mov_status, mov_created, mov_updated
+                FROM tb_movie 
+                WHERE mov_status = 'active'
+                ORDER BY mov_created DESC
+                LIMIT %s OFFSET %s
+                """
             result = self.db.execute_safe(query, (limit, skip))
             return result
         except Exception as e:
@@ -161,10 +172,13 @@ class MovieRepository:
         except Exception as e:
             raise Exception(f"Error searching movies: {str(e)}")
     
-    async def count_total(self) -> int:
-        """Contar total de películas activas"""
+    async def count_total(self, include_inactive: bool = False) -> int:
+        """Contar total de películas"""
         try:
-            query = "SELECT COUNT(*) as total FROM tb_movie WHERE mov_status = 'active'"
+            if include_inactive:
+                query = "SELECT COUNT(*) as total FROM tb_movie"
+            else:
+                query = "SELECT COUNT(*) as total FROM tb_movie WHERE mov_status = 'active'"
             result = self.db.execute_safe(query)
             return result[0]['total'] if result else 0
         except Exception as e:
