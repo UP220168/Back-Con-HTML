@@ -63,6 +63,20 @@ class UserService:
             logger.error(f"Error in get_user_by_id: {str(e)}")
             raise HTTPException(status_code=500, detail="Error interno del servidor")
     
+    async def get_user_by_email(self, email: str) -> Optional[UserResponse]:
+        """Obtener usuario por email"""
+        try:
+            user_dict = await self.repository.get_by_email(email)
+            if not user_dict:
+                return None
+                
+            return self._dict_to_user_response(user_dict)
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in get_user_by_email: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
     async def create_user(self, user_data: UserCreate) -> UserResponse:
         """Crear nuevo usuario"""
         try:

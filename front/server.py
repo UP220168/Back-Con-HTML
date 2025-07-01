@@ -8,7 +8,7 @@ import os
 import sys
 
 # Configuración
-PORT = 3000
+PORT = 8080
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
