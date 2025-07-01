@@ -397,6 +397,8 @@ async def create_purchase_simple(purchase: PurchaseRequest):
         
         # 5. Generar el PDF del boleto con los datos reales
         try:
+            print(f"Iniciando generación de PDF para venta: {sale_id}")
+            
             # Crear un objeto sale simulado para la función PDF
             class MockSale:
                 def __init__(self, sale_id):
@@ -404,9 +406,21 @@ async def create_purchase_simple(purchase: PurchaseRequest):
             
             mock_sale = MockSale(sale_id)
             pdf_path = await generate_ticket_pdf(mock_sale, purchase, ticket_ids)
-            print(f"PDF del boleto generado: {pdf_path}")
+            print(f"✅ PDF del boleto generado exitosamente: {pdf_path}")
+            
+            # Verificar que el archivo existe
+            import os
+            if os.path.exists(pdf_path):
+                file_size = os.path.getsize(pdf_path)
+                print(f"✅ Archivo PDF confirmado - Tamaño: {file_size} bytes")
+            else:
+                print(f"❌ Archivo PDF no encontrado en: {pdf_path}")
+                pdf_path = None
+                
         except Exception as pdf_error:
-            print(f"Error generando PDF: {pdf_error}")
+            print(f"❌ Error generando PDF: {pdf_error}")
+            import traceback
+            print(traceback.format_exc())
             pdf_path = None
         
         return {
@@ -489,7 +503,7 @@ async def download_ticket(sale_id: str):
         return FileResponse(
             path=pdf_path,
             filename=f"boleto_{sale_id}.txt",
-            media_type="text/plain"
+            media_type="text/plain; charset=utf-8"
         )
         
     except HTTPException:

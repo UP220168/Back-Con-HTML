@@ -535,208 +535,227 @@ class Booking {
         const saleId = result?.sale_id || 'N/A';
         const ticketCount = result?.ticket_ids?.length || this.selectedSeats.length;
         const ticketIds = result?.ticket_ids || [];
-        const pdfGenerated = result?.pdf_generated || false;
         
         console.log('🎉 Compra completada exitosamente:', result);
         
         // Crear un mensaje más detallado
         let message = `¡Compra realizada exitosamente! 🎬\n\n`;
-        message += `📋 ID de Venta: ${saleId}\n`;
-        message += `🎟️ Boletos generados: ${ticketCount}\n`;
-        message += `💺 Asientos: ${this.selectedSeats.map(seat => seat.id).join(', ')}\n`;
-        message += `🎭 Película: ${this.selectedMovie?.mov_title || 'N/A'}\n`;
-        message += `💰 Total pagado: $${(this.selectedSeats.length * (this.selectedScreening?.scr_price || 12.5)).toFixed(2)} MXN\n\n`;
-        
-        if (pdfGenerated) {
-            message += `✅ Boleto generado exitosamente\n`;
-            message += `📄 Puede descargar su boleto haciendo clic en "Descargar Boleto"\n\n`;
-        } else {
-            message += `⚠️ Boleto en proceso de generación\n\n`;
-        }
-        
         message += `🎪 ¡Disfrute la función!`;
 
         alert(message);
-        
-        // Si el PDF fue generado, mostrar botón de descarga
-        if (pdfGenerated && saleId !== 'N/A') {
-            this.showDownloadButton(saleId);
-        }
     }
 
-    showDownloadButton(saleId) {
-        // Crear botón de descarga temporal
-        const downloadBtn = document.createElement('button');
-        downloadBtn.textContent = '📄 Descargar Boleto';
-        downloadBtn.className = 'btn btn-success';
-        downloadBtn.style.margin = '10px';
-        downloadBtn.onclick = () => this.downloadTicket(saleId);
-        
-        // Agregar al contenedor de navegación
-        const navContainer = document.querySelector('.booking-navigation');
-        if (navContainer) {
-            navContainer.appendChild(downloadBtn);
-            
-            // Remover el botón después de 30 segundos
-            setTimeout(() => {
-                if (downloadBtn.parentNode) {
-                    downloadBtn.parentNode.removeChild(downloadBtn);
-                }
-            }, 30000);
-        }
-    }
-
-    async downloadTicket(saleId) {
-        try {
-            console.log(`📄 Descargando boleto para venta: ${saleId}`);
-            
-            const response = await fetch(`${CONFIG.API_BASE_URL}/sales/download-ticket/${saleId}`);
-            
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `boleto_${saleId}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                console.log('✅ Boleto descargado exitosamente');
-            } else {
-                throw new Error('Error al descargar el boleto');
-            }
-        } catch (error) {
-            console.error('❌ Error descargando boleto:', error);
-            alert('Error al descargar el boleto. Por favor intente más tarde.');
-        }
-    }
+    // Métodos de descarga del backend removidos - ahora se genera PDF en frontend
 
     generateTicketPDF(purchaseData, result = null) {
         try {
-            // Verificar que jsPDF esté disponible
-            if (typeof window.jsPDF === 'undefined') {
+            // Verificar que jsPDF esté disponible (UMD build)
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
                 console.error('❌ jsPDF no está cargado');
-                alert('Error: No se pudo generar el PDF. jsPDF no está disponible.');
+                alert('Error: No se puede generar el PDF. Biblioteca jsPDF no disponible.');
                 return;
             }
 
-            console.log('📄 Generando PDF del boleto...');
-            const { jsPDF } = window;
+            console.log('📄 Generando PDF del boleto con jsPDF...');
+            const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
             // Configuración del documento
             const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
             const marginLeft = 20;
+            const marginRight = 20;
+            const contentWidth = pageWidth - marginLeft - marginRight;
             let currentY = 30;
 
             // Header del boleto
-            doc.setFontSize(20);
+            doc.setFontSize(24);
             doc.setTextColor(40, 40, 40);
-            doc.text('🎬 Cinema el Foraneo', marginLeft, currentY);
+            doc.text('🎬 Cinema el Foráneo', marginLeft, currentY);
             
             currentY += 15;
-            doc.setFontSize(16);
+            doc.setFontSize(18);
+            doc.setTextColor(60, 60, 60);
             doc.text('BOLETO DE ENTRADA', marginLeft, currentY);
 
             // Línea separadora
             currentY += 10;
-            doc.setLineWidth(0.5);
-            doc.line(marginLeft, currentY, pageWidth - marginLeft, currentY);
+            doc.setLineWidth(1);
+            doc.setDrawColor(100, 100, 100);
+            doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
 
-            // Información de la compra (si está disponible)
-            if (result) {
-                currentY += 15;
-                doc.setFontSize(10);
-                doc.setTextColor(100, 100, 100);
-                doc.text(`ID de Venta: ${result.sale_id || 'N/A'}`, marginLeft, currentY);
-                currentY += 6;
-                const ticketIds = result.ticket_ids || [];
-                doc.text(`IDs de Boletos: ${ticketIds.join(', ') || 'N/A'}`, marginLeft, currentY);
-                currentY += 10;
-            }
-
-            // Información de la película
+            // Información de la compra
+            currentY += 20;
             doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
+            doc.setTextColor(80, 80, 80);
             
+            if (result && result.sale_id) {
+                doc.text(`ID de Venta: ${result.sale_id}`, marginLeft, currentY);
+                currentY += 8;
+            }
+            
+            const now = new Date();
+            doc.text(`Fecha de Compra: ${now.toLocaleDateString('es-ES')} ${now.toLocaleTimeString('es-ES')}`, marginLeft, currentY);
+            currentY += 15;
+
+            // Información de la película y función
+            doc.setFontSize(14);
+            doc.setTextColor(40, 40, 40);
+            doc.text('DETALLES DE LA FUNCIÓN', marginLeft, currentY);
+            currentY += 12;
+
+            doc.setFontSize(12);
+            doc.setTextColor(60, 60, 60);
+            
+            // Película
             if (this.selectedMovie) {
                 doc.text(`Película: ${this.selectedMovie.mov_title}`, marginLeft, currentY);
                 currentY += 8;
-                doc.text(`Duración: ${this.selectedMovie.mov_duration} min`, marginLeft, currentY);
+                doc.text(`Género: ${this.selectedMovie.mov_genre || 'N/A'}`, marginLeft, currentY);
                 currentY += 8;
-                doc.text(`Clasificación: ${this.selectedMovie.mov_classification}`, marginLeft, currentY);
+                doc.text(`Duración: ${this.selectedMovie.mov_duration || 'N/A'} min`, marginLeft, currentY);
                 currentY += 8;
-                doc.text(`Género: ${this.selectedMovie.mov_genre}`, marginLeft, currentY);
-                currentY += 12;
+                doc.text(`Clasificación: ${this.selectedMovie.mov_classification || 'N/A'}`, marginLeft, currentY);
+                currentY += 10;
             }
 
-            // Información de la función
+            // Función y sala
             if (this.selectedScreening) {
                 const screeningDate = new Date(`${this.selectedScreening.scr_date}T${this.selectedScreening.scr_time}`);
-                const fechaStr = screeningDate.toLocaleDateString('es-MX');
-                const horaStr = screeningDate.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
-                
-                doc.text(`Función: ${fechaStr} a las ${horaStr}`, marginLeft, currentY);
+                const fechaStr = screeningDate.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                const horaStr = screeningDate.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                doc.text(`Fecha de Función: ${fechaStr}`, marginLeft, currentY);
+                currentY += 8;
+                doc.text(`Hora: ${horaStr}`, marginLeft, currentY);
                 currentY += 8;
                 doc.text(`Sala: ${this.getAuditoriumName(this.selectedScreening.scr_aud_id)}`, marginLeft, currentY);
-                currentY += 12;
+                currentY += 15;
             }
-
-            // Asientos
-            const asientosStr = this.selectedSeats.map(seat => seat.id).join(', ');
-            doc.text(`Asientos: ${asientosStr}`, marginLeft, currentY);
-            currentY += 8;
-            doc.text(`Cantidad de boletos: ${this.selectedSeats.length}`, marginLeft, currentY);
-            currentY += 12;
 
             // Información del cliente
-            doc.text(`Cliente: ${purchaseData.customer_name}`, marginLeft, currentY);
-            currentY += 8;
-            doc.text(`Email: ${purchaseData.customer_email}`, marginLeft, currentY);
-            if (purchaseData.customer_phone) {
-                currentY += 8;
-                doc.text(`Teléfono: ${purchaseData.customer_phone}`, marginLeft, currentY);
-            }
+            doc.setFontSize(14);
+            doc.setTextColor(40, 40, 40);
+            doc.text('DATOS DEL CLIENTE', marginLeft, currentY);
             currentY += 12;
 
-            // Método de pago
+            doc.setFontSize(12);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`Nombre: ${purchaseData.customer_name}`, marginLeft, currentY);
+            currentY += 8;
+            doc.text(`Email: ${purchaseData.customer_email}`, marginLeft, currentY);
+            currentY += 8;
+            if (purchaseData.customer_phone) {
+                doc.text(`Teléfono: ${purchaseData.customer_phone}`, marginLeft, currentY);
+                currentY += 8;
+            }
+            currentY += 7;
+
+            // Información de los boletos
+            doc.setFontSize(14);
+            doc.setTextColor(40, 40, 40);
+            doc.text('BOLETOS ADQUIRIDOS', marginLeft, currentY);
+            currentY += 12;
+
+            doc.setFontSize(12);
+            doc.setTextColor(60, 60, 60);
+            
+            const seats = this.selectedSeats.map(seat => seat.id).join(', ');
+            doc.text(`Asientos: ${seats}`, marginLeft, currentY);
+            currentY += 8;
+            doc.text(`Cantidad: ${this.selectedSeats.length} boleto(s)`, marginLeft, currentY);
+            currentY += 8;
+
+            if (result && result.ticket_ids && result.ticket_ids.length > 0) {
+                const ticketIds = result.ticket_ids.length > 3 
+                    ? result.ticket_ids.slice(0, 3).join(', ') + '...'
+                    : result.ticket_ids.join(', ');
+                doc.text(`IDs de Tickets: ${ticketIds}`, marginLeft, currentY);
+                currentY += 10;
+            }
+
+            // Resumen de pago
+            doc.setFontSize(14);
+            doc.setTextColor(40, 40, 40);
+            doc.text('RESUMEN DE PAGO', marginLeft, currentY);
+            currentY += 12;
+
+            doc.setFontSize(12);
+            doc.setTextColor(60, 60, 60);
+            
+            const unitPrice = this.selectedScreening?.scr_price || 12.5;
+            doc.text(`Precio unitario: $${unitPrice.toFixed(2)} MXN`, marginLeft, currentY);
+            currentY += 8;
             doc.text(`Método de pago: ${purchaseData.payment_method.toUpperCase()}`, marginLeft, currentY);
             currentY += 8;
 
-            // Total
-            doc.setFontSize(14);
-            doc.setTextColor(0, 100, 0);
-            doc.text(`Total: $${purchaseData.total_amount.toFixed(2)} MXN`, marginLeft, currentY);
-
-            // Información adicional
+            // Total con destacado
+            doc.setFontSize(16);
+            doc.setTextColor(40, 40, 40);
+            doc.text(`Total Pagado: $${purchaseData.total_amount.toFixed(2)} MXN`, marginLeft, currentY);
             currentY += 20;
+
+            // Línea separadora
+            doc.setLineWidth(1);
+            doc.setDrawColor(100, 100, 100);
+            doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
+            currentY += 15;
+
+            // Instrucciones
+            doc.setFontSize(12);
+            doc.setTextColor(80, 80, 80);
+            doc.text('INSTRUCCIONES IMPORTANTES:', marginLeft, currentY);
+            currentY += 10;
+
             doc.setFontSize(10);
             doc.setTextColor(100, 100, 100);
-            doc.text(`Fecha de compra: ${new Date().toLocaleString('es-MX')}`, marginLeft, currentY);
-            currentY += 6;
-            doc.text(`ID único: ${Date.now()}`, marginLeft, currentY);
+            const instructions = [
+                '• Presente este boleto al ingresar a la sala',
+                '• Llegue 15 minutos antes del inicio de la función',
+                '• No se admiten devoluciones ni cambios',
+                '• Prohibido el ingreso de alimentos y bebidas externas',
+                '• Mantenga el boleto durante toda la función'
+            ];
+
+            instructions.forEach(instruction => {
+                doc.text(instruction, marginLeft, currentY);
+                currentY += 6;
+            });
 
             // Footer
-            currentY += 20;
-            doc.setTextColor(60, 60, 60);
-            doc.text('Conserve este boleto para ingresar a la función.', marginLeft, currentY);
-            currentY += 6;
-            doc.text('No se admiten devoluciones ni cambios.', marginLeft, currentY);
-
-            // Generar nombre del archivo
-            const movieTitle = this.selectedMovie?.mov_title?.replace(/[^a-zA-Z0-9]/g, '_') || 'pelicula';
-            const fileName = `boleto_${movieTitle}_${Date.now()}.pdf`;
+            currentY = pageHeight - 40;
+            doc.setFontSize(14);
+            doc.setTextColor(40, 40, 40);
+            doc.text('¡DISFRUTE SU FUNCIÓN! 🍿🎬', marginLeft, currentY);
             
-            // Descargar el PDF
+            currentY += 10;
+            doc.setFontSize(8);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`Generado el: ${now.toLocaleDateString('es-ES')} ${now.toLocaleTimeString('es-ES')}`, marginLeft, currentY);
+            doc.text('Sistema Cinema el Foráneo v1.0', pageWidth - marginRight - 40, currentY);
+
+            // Guardar el PDF
+            const fileName = `boleto_${result?.sale_id || 'compra'}_${now.getTime()}.pdf`;
             doc.save(fileName);
             
-            console.log('✅ PDF generado exitosamente:', fileName);
+            console.log('✅ PDF generado y descargado exitosamente:', fileName);
+            
+            // Mostrar mensaje de confirmación
+            setTimeout(() => {
+                alert('✅ ¡Boleto PDF generado exitosamente!\nRevise su carpeta de descargas.');
+            }, 500);
 
         } catch (error) {
             console.error('❌ Error generando PDF:', error);
-            alert('Error al generar el boleto PDF. La compra se realizó correctamente, pero no se pudo crear el archivo PDF.');
+            alert(`❌ Error al generar el boleto PDF: ${error.message}\nPor favor intente de nuevo.`);
         }
     }
 
