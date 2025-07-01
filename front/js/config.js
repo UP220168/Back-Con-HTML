@@ -18,6 +18,7 @@ const CONFIG = {
         
         // Others
         MOVIES: '/movies',
+        AUDITORIUMS: '/auditoriums',
         SCREENINGS: '/screenings',
         TICKETS: '/tickets',
         SALES: '/sales'
@@ -84,3 +85,85 @@ function log(message, type = 'info', data = null) {
             break;
     }
 }
+
+// Función para testing
+async function testAPI() {
+    console.log('=== TESTING API CONNECTIVITY ===');
+    
+    try {
+        // Test movies
+        console.log('Testing movies API...');
+        const moviesResponse = await fetch('http://localhost:5000/api/movies/');
+        const moviesData = await moviesResponse.json();
+        console.log('✅ Movies API working:', moviesData);
+        
+        // Test auditoriums  
+        console.log('Testing auditoriums API...');
+        const auditoriumsResponse = await fetch('http://localhost:5000/api/auditoriums/');
+        const auditoriumsData = await auditoriumsResponse.json();
+        console.log('✅ Auditoriums API working:', auditoriumsData);
+        
+        // Test screenings
+        console.log('Testing screenings API...');
+        const screeningsResponse = await fetch('http://localhost:5000/api/screenings/');
+        const screeningsData = await screeningsResponse.json();
+        console.log('✅ Screenings API working:', screeningsData);
+        
+        console.log('=== ALL APIS WORKING ===');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ API Test failed:', error);
+        return false;
+    }
+}
+
+// Exponer función de test globalmente
+window.testAPI = testAPI;
+
+// Función para probar creación de función usando endpoint de test
+function testCreateScreeningTest() {
+    console.log('🧪 Probando creación de función con endpoint de test...');
+    
+    const testData = {
+        scr_mov_id: "1", // Primer película
+        scr_aud_id: "1", // Primer auditorio
+        scr_date: "2024-01-15",
+        scr_time: "20:00",
+        scr_price: 10.50,
+        scr_status: "scheduled"
+    };
+    
+    console.log('📤 Datos de prueba:', testData);
+    console.log('🔗 URL:', CONFIG.API_BASE_URL + '/api/screenings/test');
+    
+    fetch(CONFIG.API_BASE_URL + '/api/screenings/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testData)
+    })
+    .then(async response => {
+        console.log('📥 Respuesta recibida:', response.status, response.statusText);
+        const text = await response.text();
+        console.log('📄 Contenido de respuesta:', text);
+        
+        if (response.ok) {
+            console.log('✅ Función creada exitosamente con endpoint de test');
+            return JSON.parse(text);
+        } else {
+            console.error('❌ Error en endpoint de test:', response.status, text);
+            throw new Error(`HTTP ${response.status}: ${text}`);
+        }
+    })
+    .then(data => {
+        console.log('🎉 Resultado exitoso:', data);
+    })
+    .catch(error => {
+        console.error('💥 Error completo:', error);
+    });
+}
+
+// Exponer función de test
+window.testCreateScreeningTest = testCreateScreeningTest;

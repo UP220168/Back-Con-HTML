@@ -93,7 +93,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3>Boletos</h3>
-                        <span class="card-icon">�</span>
+                        <span class="card-icon">🎟️</span>
                     </div>
                     <div class="card-content">
                         <div class="metric">
@@ -384,35 +384,42 @@
         <div class="modal-content">
             <span class="close" onclick="closeScreeningModal()">&times;</span>
             <div class="modal-body">
-                <h3 id="screening-modal-title">Programar Función</h3>
+                <h3 id="screening-modal-title">Programar Nueva Función</h3>
                 <form id="screening-form">
                     <div class="form-group">
-                        <label for="screening-movie">Película:</label>
-                        <select id="screening-movie" name="scr_mov_id" required>
+                        <label for="screening-movie-select">Película:</label>
+                        <select id="screening-movie-select" required>
                             <option value="">Seleccionar película</option>
                         </select>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="screening-auditorium">Sala:</label>
-                        <select id="screening-auditorium" name="scr_aud_id" required>
+                        <label for="screening-auditorium-select">Sala:</label>
+                        <select id="screening-auditorium-select" required>
                             <option value="">Seleccionar sala</option>
                         </select>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="screening-date">Fecha:</label>
-                        <input type="date" id="screening-date" name="scr_date" required>
+                        <label for="screening-date-input">Fecha:</label>
+                        <input type="date" id="screening-date-input" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="screening-time">Hora:</label>
-                        <input type="time" id="screening-time" name="scr_time" required>
+                        <label for="screening-time-select">Hora:</label>
+                        <select id="screening-time-select" required>
+                            <option value="">Seleccionar hora</option>
+                        </select>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="screening-price">Precio del boleto:</label>
-                        <input type="number" id="screening-price" name="scr_ticket_price" required min="0" step="0.01">
+                        <label for="screening-price-input">Precio del boleto (MXN):</label>
+                        <input type="number" id="screening-price-input" step="0.50" min="0" required value="70">
                     </div>
+                    
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="closeScreeningModal()">Cancelar</button>
-                        <button type="submit" class="btn-primary">Guardar</button>
+                        <button type="submit" class="btn-primary">Programar Función</button>
                     </div>
                 </form>
             </div>
@@ -431,5 +438,125 @@
     <script src="js/components/screenings.js"></script>
     <script src="js/components/auth.js"></script>
     <script src="js/app.js"></script>
+
+    <script>
+        // Funciones globales para modales
+        function closeScreeningModal() {
+            const modal = document.getElementById('screening-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function closeMovieModal() {
+            const modal = document.getElementById('movie-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Función para debug en consola
+        function debugScreenings() {
+            if (window.Screenings) {
+                console.log('=== SCREENINGS DEBUG ===');
+                console.log('Movies:', window.Screenings.movies);
+                console.log('Auditoriums:', window.Screenings.auditoriums);
+                console.log('Screenings:', window.Screenings.screenings);
+                return {
+                    movies: window.Screenings.movies,
+                    auditoriums: window.Screenings.auditoriums,
+                    screenings: window.Screenings.screenings
+                };
+            } else {
+                console.error('Screenings component not found');
+                return null;
+            }
+        }
+
+        // Función de test para crear función directamente
+        async function testCreateScreening() {
+            console.log('=== TESTING SCREENING CREATION ===');
+            
+            try {
+                const testData = {
+                    scr_mov_id: "90f9ccfd-e219-48e8-9863-e568b5fff0c4",
+                    scr_aud_id: "d237669d-5574-11f0-9612-c6d18831a5b6", 
+                    scr_date: "2026-02-15",
+                    scr_time: "15:00:00",
+                    scr_price: 95.0,
+                    scr_status: "scheduled"
+                };
+                
+                console.log('Test data:', testData);
+                
+                const result = await API.screenings.create(testData);
+                console.log('✅ Success:', result);
+                alert('Función de prueba creada exitosamente!');
+                
+                // Recargar datos
+                if (window.Screenings) {
+                    await window.Screenings.loadData();
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                alert(`Error en prueba: ${error.message}`);
+                return null;
+            }
+        }
+
+        // Función de test para crear función directamente con endpoint simple
+        async function testCreateScreeningSimple() {
+            console.log('=== TESTING SIMPLE SCREENING CREATION ===');
+            
+            try {
+                const testData = {
+                    scr_mov_id: "90f9ccfd-e219-48e8-9863-e568b5fff0c4",
+                    scr_aud_id: "d237669d-5574-11f0-9612-c6d18831a5b6", 
+                    scr_date: "2025-07-02",
+                    scr_time: "15:00:00",
+                    scr_price: 95.0,
+                    scr_status: "scheduled"
+                };
+                
+                console.log('Test data:', testData);
+                
+                // Usar endpoint de prueba
+                const response = await fetch('http://localhost:5000/api/screenings/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ Success:', result);
+                alert('Función de prueba creada exitosamente con endpoint simple!');
+                
+                // Recargar datos
+                if (window.Screenings) {
+                    await window.Screenings.loadData();
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('❌ Simple test failed:', error);
+                alert(`Error en prueba simple: ${error.message}`);
+                return null;
+            }
+        }
+
+        // Exponer función de debug globalmente
+        window.debugScreenings = debugScreenings;
+        window.testCreateScreening = testCreateScreening;
+        window.testCreateScreeningSimple = testCreateScreeningSimple;
+    </script>
 </body>
 </html>

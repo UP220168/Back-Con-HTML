@@ -92,35 +92,92 @@ class Navigation {
         });
     }
 
-    loadPageData(page) {
-        switch (page) {
-            case 'dashboard':
-                if (window.Dashboard) {
-                    Dashboard.loadData();
-                }
-                break;
-            case 'booking':
-                if (window.Booking) {
-                    Booking.loadData();
-                }
-                break;
-            case 'movies':
-                if (window.Movies) {
-                    Movies.loadData();
-                }
-                break;
-            case 'screenings':
-                if (window.Screenings) {
-                    Screenings.loadData();
-                }
-                break;
-            case 'auth':
-                if (window.Auth) {
-                    Auth.init();
-                }
-                break;
-            default:
-                log(`No data loader defined for page: ${page}`, 'info');
+    async loadPageData(page) {
+        log(`Loading data for page: ${page}`, 'info');
+        
+        try {
+            switch (page) {
+                case 'dashboard':
+                    if (window.Dashboard && typeof window.Dashboard.loadData === 'function') {
+                        await window.Dashboard.loadData();
+                        log('Dashboard data loaded successfully', 'info');
+                    } else {
+                        log('Dashboard component not available', 'warn');
+                    }
+                    break;
+                    
+                case 'booking':
+                    if (window.Booking && typeof window.Booking.loadData === 'function') {
+                        await window.Booking.loadData();
+                        log('Booking data loaded successfully', 'info');
+                    } else {
+                        log('Booking component not available', 'warn');
+                    }
+                    break;
+                    
+                case 'movies':
+                    if (window.Movies && typeof window.Movies.loadData === 'function') {
+                        await window.Movies.loadData();
+                        log('Movies data loaded successfully', 'info');
+                    } else {
+                        log('Movies component not available', 'warn');
+                    }
+                    break;
+                    
+                case 'screenings':
+                    if (window.Screenings && typeof window.Screenings.loadData === 'function') {
+                        log('Loading screenings data...', 'info');
+                        await window.Screenings.loadData();
+                        log('Screenings data loaded successfully', 'info');
+                    } else {
+                        log('Screenings component not available', 'error');
+                        // Intentar reinicializar el componente
+                        this.initializeScreeningsComponent();
+                        
+                        // Intentar cargar datos nuevamente después de reinicializar
+                        setTimeout(async () => {
+                            if (window.Screenings && typeof window.Screenings.loadData === 'function') {
+                                try {
+                                    await window.Screenings.loadData();
+                                    log('Screenings data loaded after reinitialization', 'info');
+                                } catch (error) {
+                                    log('Failed to load screenings data after reinitialization', 'error', error);
+                                }
+                            }
+                        }, 100);
+                    }
+                    break;
+                    
+                case 'auth':
+                    if (window.Auth && typeof window.Auth.init === 'function') {
+                        window.Auth.init();
+                        log('Auth component initialized', 'info');
+                    } else {
+                        log('Auth component not available', 'warn');
+                    }
+                    break;
+                    
+                default:
+                    log(`No data loader defined for page: ${page}`, 'info');
+            }
+        } catch (error) {
+            log(`Error loading data for page ${page}:`, 'error', error);
+        }
+    }
+    
+    initializeScreeningsComponent() {
+        log('Attempting to reinitialize Screenings component', 'info');
+        
+        // Verificar si la clase Screenings está disponible
+        if (typeof Screenings !== 'undefined') {
+            try {
+                window.Screenings = new Screenings();
+                log('Screenings component reinitialized successfully', 'info');
+            } catch (error) {
+                log('Error reinitializing Screenings component:', 'error', error);
+            }
+        } else {
+            log('Screenings class not available for reinitialization', 'error');
         }
     }
 
@@ -215,5 +272,5 @@ function formatTime(time) {
 
 // Inicializar navegación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    window.navigation = new Navigation();
+    window.AppNavigation = new Navigation();
 });

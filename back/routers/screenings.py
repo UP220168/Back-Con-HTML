@@ -43,6 +43,47 @@ async def get_screening(screening_id: str):
     """
     return await screening_service.get_screening_by_id(screening_id)
 
+# POST /api/screenings/test - Crear nueva proyección sin validaciones complejas (solo para pruebas)
+@router.post("/test", status_code=201)
+async def create_screening_test(screening: dict):
+    """
+    Crear una nueva proyección - versión de prueba sin validaciones complejas
+    Acepta un dict directo para evitar problemas de validación de tipos
+    """
+    try:
+        import uuid
+        from datetime import datetime
+        
+        # Crear directamente en el repository sin validaciones de servicio
+        screening_id = str(uuid.uuid4())
+        now = datetime.now()
+        
+        query = """
+        INSERT INTO tb_screening (scr_id, scr_mov_id, scr_aud_id, scr_date, scr_time, 
+                                scr_price, scr_status, scr_created, scr_updated)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        
+        from db_connection import database
+        database.execute_safe(query, (
+            screening_id,
+            screening['scr_mov_id'],
+            screening['scr_aud_id'], 
+            screening['scr_date'],
+            screening['scr_time'],
+            screening['scr_price'],
+            screening.get('scr_status', 'scheduled'),
+            now,
+            now
+        ))
+        
+        return {"message": "Screening created successfully", "scr_id": screening_id}
+        
+    except Exception as e:
+        import traceback
+        error_detail = f"Error creating screening: {str(e)}\nTraceback: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
+
 # POST /api/screenings/ - Crear nueva proyección
 @router.post("/", response_model=ScreeningResponse, status_code=201)
 async def create_screening(screening: ScreeningCreate):

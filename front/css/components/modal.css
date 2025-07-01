@@ -19,11 +19,13 @@
     padding: 30px;
     max-width: 500px;
     width: 90%;
-    max-height: 80vh;
+    max-height: 90vh;
     overflow-y: auto;
     position: relative;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     animation: slideIn 0.3s ease;
+    margin: auto;
+    top: 10%;
 }
 
 @keyframes slideIn {

@@ -124,7 +124,7 @@ class Auth {
                 
                 // Redirigir al dashboard
                 setTimeout(() => {
-                    window.navigation.navigateTo('dashboard');
+                    window.AppNavigation.navigateTo('dashboard');
                     this.updateAuthUI();
                 }, 1000);
 
@@ -167,7 +167,7 @@ class Auth {
     logout() {
         UserStorage.logout();
         this.updateAuthUI();
-        window.navigation.navigateTo('auth');
+        window.AppNavigation.navigateTo('auth');
         this.showSuccess('Sesión cerrada correctamente');
     }
 

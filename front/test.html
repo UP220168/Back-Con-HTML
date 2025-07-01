@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #fff3cd; border-color: #ffeaa7; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎬 Cinema API Test</h1>
+    
+    <div class="test-section">
+        <h2>API Connectivity Test</h2>
+        <button onclick="testAllAPIs()">Test All APIs</button>
+        <button onclick="testMovies()">Test Movies</button>
+        <button onclick="testAuditoriums()">Test Auditoriums</button>
+        <button onclick="testScreenings()">Test Screenings</button>
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Screening Component</h2>
+        <button onclick="testScreeningComponent()">Test Screening Load</button>
+        <div id="screening-test-results"></div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils/api.js"></script>
+    <script src="js/utils/storage.js"></script>
+    <script src="js/components/screenings.js"></script>
+
+    <script>
+        function showResult(containerId, message, type = 'loading') {
+            const container = document.getElementById(containerId);
+            container.className = `test-section ${type}`;
+            container.innerHTML = `<pre>${message}</pre>`;
+        }
+
+        async function testAllAPIs() {
+            showResult('test-results', 'Testing all APIs...', 'loading');
+            
+            try {
+                const result = await testAPI();
+                if (result) {
+                    showResult('test-results', '✅ All APIs are working correctly!', 'success');
+                } else {
+                    showResult('test-results', '❌ Some APIs failed. Check console for details.', 'error');
+                }
+            } catch (error) {
+                showResult('test-results', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMovies() {
+            showResult('test-results', 'Testing Movies API...', 'loading');
+            
+            try {
+                const data = await API.movies.getAll();
+                showResult('test-results', `✅ Movies API working!\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('test-results', `❌ Movies API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuditoriums() {
+            showResult('test-results', 'Testing Auditoriums API...', 'loading');
+            
+            try {
+                const data = await API.auditoriums.getAll();
+                showResult('test-results', `✅ Auditoriums API working!\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('test-results', `❌ Auditoriums API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testScreenings() {
+            showResult('test-results', 'Testing Screenings API...', 'loading');
+            
+            try {
+                const data = await API.screenings.getAll();
+                showResult('test-results', `✅ Screenings API working!\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('test-results', `❌ Screenings API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testScreeningComponent() {
+            showResult('screening-test-results', 'Testing Screening Component...', 'loading');
+            
+            try {
+                if (window.Screenings) {
+                    await window.Screenings.loadData();
+                    const info = {
+                        movies: window.Screenings.movies.length,
+                        auditoriums: window.Screenings.auditoriums.length,
+                        screenings: window.Screenings.screenings.length
+                    };
+                    showResult('screening-test-results', `✅ Screening Component working!\nData loaded:\n${JSON.stringify(info, null, 2)}`, 'success');
+                } else {
+                    showResult('screening-test-results', '❌ Screening Component not found', 'error');
+                }
+            } catch (error) {
+                showResult('screening-test-results', `❌ Screening Component failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, running auto-test...');
+            testAllAPIs();
+        });
+    </script>
+</body>
+</html>

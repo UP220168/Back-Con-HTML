@@ -25,6 +25,7 @@ class App {
             'Dashboard', 
             'Booking',
             'Movies',
+            'Screenings',
             'Auth'
         ];
 
@@ -34,6 +35,13 @@ class App {
             log('Missing components:', 'warn', missingComponents);
         } else {
             log('All components loaded successfully');
+        }
+        
+        // Log específico para Screenings
+        if (window.Screenings) {
+            log('Screenings component is available');
+        } else {
+            log('Screenings component is missing', 'error');
         }
     }
 
@@ -96,7 +104,7 @@ class App {
     onPageVisible() {
         log('Page became visible');
         // Actualizar datos si es necesario
-        if (window.navigation && window.navigation.getCurrentPage() === 'dashboard') {
+        if (window.AppNavigation && window.AppNavigation.getCurrentPage() === 'dashboard') {
             // Refrescar dashboard cuando la página se vuelve visible
             setTimeout(() => {
                 if (window.Dashboard) {
@@ -251,7 +259,7 @@ class App {
                 isLoggedIn: UserStorage.isLoggedIn(),
                 settings: SettingsStorage.getSettings()
             },
-            navigation: window.navigation ? window.navigation.getCurrentPage() : null
+            navigation: window.AppNavigation ? window.AppNavigation.getCurrentPage() : null
         };
     }
 }

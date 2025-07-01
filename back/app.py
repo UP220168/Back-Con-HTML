@@ -1,14 +1,27 @@
 import os
 import sys
+import logging
+import traceback
 from pathlib import Path
 
 # Configurar path del proyecto
 ROOT_DIR = Path(__file__).parent
 sys.path.append(str(ROOT_DIR))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('/app/logs/app.log', mode='a')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Importar conexión a base de datos
 from db_connection import database, database_name
@@ -52,6 +65,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware para logging de errores
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    try:
+        logger.info(f"Request: {request.method} {request.url}")
+        
+        # Obtener el body si es POST
+        if request.method == "POST":
+            body = await request.body()
+            logger.info(f"Request body: {body.decode('utf-8') if body else 'Empty'}")
+            
+            # Crear una nueva request con el body leído
+            async def receive():
+                return {"type": "http.request", "body": body}
+            
+            request._receive = receive
+        
+        response = await call_next(request)
+        
+        logger.info(f"Response: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Error in middleware: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
 
 # Registrar routers
 app.include_router(movies.router, prefix="/api/movies")

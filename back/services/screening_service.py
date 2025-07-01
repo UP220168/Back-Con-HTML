@@ -69,35 +69,47 @@ class ScreeningService:
     async def create_screening(self, screening_data: ScreeningCreate) -> ScreeningResponse:
         """Crear nueva proyección"""
         try:
+            logger.info(f"Creating screening with data: {screening_data.dict()}")
+            
             # Validaciones de negocio adicionales
             await self._validate_screening_data(screening_data.dict())
+            logger.info("Basic validations passed")
             
             # Verificar que la película existe
             movie = await self.movie_repository.get_by_id(screening_data.scr_mov_id)
             if not movie:
+                logger.error(f"Movie not found: {screening_data.scr_mov_id}")
                 raise HTTPException(status_code=400, detail="La película especificada no existe")
+            logger.info(f"Movie found: {movie.get('mov_title', 'Unknown')}")
             
             # Verificar que el auditorio existe
             auditorium = await self.auditorium_repository.get_by_id(screening_data.scr_aud_id)
             if not auditorium:
+                logger.error(f"Auditorium not found: {screening_data.scr_aud_id}")
                 raise HTTPException(status_code=400, detail="El auditorio especificado no existe")
+            logger.info(f"Auditorium found: {auditorium.get('aud_name', 'Unknown')}")
             
             # Verificar conflictos de horario
+            logger.info("Checking schedule conflicts...")
             await self._check_schedule_conflicts(screening_data)
+            logger.info("No schedule conflicts found")
             
             # Crear proyección
+            logger.info("Creating screening in database...")
             created_screening = await self.repository.create(screening_data.dict())
             
             if not created_screening:
+                logger.error("Failed to create screening - repository returned None")
                 raise HTTPException(status_code=500, detail="Error creando proyección")
             
+            logger.info(f"Screening created successfully with ID: {created_screening.get('scr_id')}")
             return self._dict_to_screening_response(created_screening)
         
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error in create_screening: {str(e)}")
-            raise HTTPException(status_code=500, detail="Error interno del servidor")
+            logger.error(f"Error in create_screening: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
     
     async def update_screening(self, screening_id: str, screening_data: ScreeningUpdate) -> ScreeningResponse:
         """Actualizar proyección existente"""
@@ -197,6 +209,7 @@ class ScreeningService:
             if isinstance(screening_date, str):
                 screening_date = datetime.strptime(screening_date, '%Y-%m-%d').date()
             
+            # Permitir el día actual y fechas futuras
             if screening_date < date.today():
                 raise HTTPException(
                     status_code=400, 
@@ -221,7 +234,17 @@ class ScreeningService:
                 continue
                 
             if existing.get('scr_status') in ['scheduled', 'ongoing']:
-                existing_start = datetime.combine(existing['scr_date'], existing['scr_time'])
+                # Convertir scr_time a time si es timedelta
+                existing_time = existing['scr_time']
+                if isinstance(existing_time, timedelta):
+                    # Convertir timedelta a time
+                    total_seconds = int(existing_time.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    seconds = total_seconds % 60
+                    existing_time = time(hours, minutes, seconds)
+                
+                existing_start = datetime.combine(existing['scr_date'], existing_time)
                 existing_end = existing_start + timedelta(hours=3)
                 
                 if (new_start < existing_end and new_end > existing_start):

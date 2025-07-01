@@ -156,6 +156,40 @@ const TicketsAPI = {
     }
 };
 
+// API para Screenings
+const ScreeningsAPI = {
+    async getAll(skip = 0, limit = 100) {
+        return api.get(CONFIG.ENDPOINTS.SCREENINGS, { skip, limit });
+    },
+
+    async getById(id) {
+        return api.get(`${CONFIG.ENDPOINTS.SCREENINGS}/${id}`);
+    },
+
+    async create(data) {
+        return api.post(CONFIG.ENDPOINTS.SCREENINGS, data);
+    },
+
+    async update(id, data) {
+        return api.put(`${CONFIG.ENDPOINTS.SCREENINGS}/${id}`, data);
+    },
+
+    async delete(id) {
+        return api.delete(`${CONFIG.ENDPOINTS.SCREENINGS}/${id}`);
+    }
+};
+
+// API para Auditoriums
+const AuditoriumsAPI = {
+    async getAll(skip = 0, limit = 100) {
+        return api.get(CONFIG.ENDPOINTS.AUDITORIUMS, { skip, limit });
+    },
+
+    async getById(id) {
+        return api.get(`${CONFIG.ENDPOINTS.AUDITORIUMS}/${id}`);
+    }
+};
+
 // Manejo de errores globales
 window.addEventListener('unhandledrejection', event => {
     log('Unhandled promise rejection', 'error', event.reason);
@@ -171,3 +205,24 @@ function showNotification(message, type = 'info') {
     // Implementación básica
     console.log(`[${type.toUpperCase()}] ${message}`);
 }
+
+// Exportar API global para compatibilidad con componentes
+window.API = {
+    // Cliente base
+    client: api,
+    
+    // APIs específicas
+    reports: ReportsAPI,
+    auth: AuthAPI,
+    movies: MoviesAPI,
+    tickets: TicketsAPI,
+    screenings: ScreeningsAPI,
+    auditoriums: AuditoriumsAPI,
+    
+    // Métodos directos del cliente
+    get: (endpoint, params) => api.get(endpoint, params),
+    post: (endpoint, data) => api.post(endpoint, data),
+    put: (endpoint, data) => api.put(endpoint, data),
+    delete: (endpoint) => api.delete(endpoint),
+    request: (endpoint, options) => api.request(endpoint, options)
+};
