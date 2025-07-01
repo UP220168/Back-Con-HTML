@@ -403,7 +403,7 @@ class Booking {
             }
         }
 
-        log('Selected seats:', 'info', this.selectedSeats);
+        console.log('🪑 Asientos seleccionados:', this.selectedSeats);
         this.updateNavigation();
     }
 
@@ -411,8 +411,21 @@ class Booking {
         const summaryEl = document.getElementById('booking-summary');
         if (!summaryEl) return;
 
-        const ticketPrice = this.selectedScreening.scr_ticket_price || 12.5;
+        const ticketPrice = this.selectedScreening.scr_price || 12.5;
         const totalPrice = this.selectedSeats.length * ticketPrice;
+
+        // Formatear fecha y hora correctamente
+        const screeningDate = new Date(`${this.selectedScreening.scr_date}T${this.selectedScreening.scr_time}`);
+        const fechaStr = screeningDate.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+        const horaStr = screeningDate.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
 
         summaryEl.innerHTML = `
             <h4>Resumen de la compra</h4>
@@ -422,11 +435,11 @@ class Booking {
             </div>
             <div class="summary-item">
                 <span>Función:</span>
-                <span>${new Date(this.selectedScreening.scr_start_time).toLocaleString()}</span>
+                <span>${fechaStr} - ${horaStr}</span>
             </div>
             <div class="summary-item">
                 <span>Sala:</span>
-                <span>${this.selectedScreening.aud_name || 'N/A'}</span>
+                <span>${this.getAuditoriumName(this.selectedScreening.scr_aud_id)}</span>
             </div>
             <div class="summary-item">
                 <span>Asientos:</span>
@@ -466,7 +479,7 @@ class Booking {
                 scr_id: this.selectedScreening.scr_id,
                 seats: this.selectedSeats.map(seat => seat.id),
                 payment_method: "cash", // Por defecto efectivo
-                total_amount: this.selectedSeats.length * (this.selectedScreening.scr_ticket_price || 12.5)
+                total_amount: this.selectedSeats.length * (this.selectedScreening.scr_price || 12.5)
             };
 
             log('Processing purchase:', 'info', purchaseData);
@@ -569,13 +582,13 @@ Su boleto PDF se descargará automáticamente.`);
 
             // Información de la función
             if (this.selectedScreening) {
-                const fecha = new Date(this.selectedScreening.scr_start_time);
-                const fechaStr = fecha.toLocaleDateString('es-MX');
-                const horaStr = fecha.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
+                const screeningDate = new Date(`${this.selectedScreening.scr_date}T${this.selectedScreening.scr_time}`);
+                const fechaStr = screeningDate.toLocaleDateString('es-MX');
+                const horaStr = screeningDate.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
                 
                 doc.text(`Función: ${fechaStr} a las ${horaStr}`, marginLeft, currentY);
                 currentY += 8;
-                doc.text(`Sala: ${this.selectedScreening.aud_name || 'N/A'}`, marginLeft, currentY);
+                doc.text(`Sala: ${this.getAuditoriumName(this.selectedScreening.scr_aud_id)}`, marginLeft, currentY);
                 currentY += 12;
             }
 
