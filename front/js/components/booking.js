@@ -560,72 +560,69 @@ class Booking {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Configuración del documento
+            // Configuración del documento (súper compacto)
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
-            const marginLeft = 20;
-            const marginRight = 20;
+            const marginLeft = 10;
+            const marginRight = 10;
             const contentWidth = pageWidth - marginLeft - marginRight;
-            let currentY = 30;
+            let currentY = 15;
 
-            // Header del boleto
-            doc.setFontSize(24);
+            // Header del boleto (compacto)
+            doc.setFontSize(16);
             doc.setTextColor(40, 40, 40);
-            doc.text('🎬 Cinema el Foráneo', marginLeft, currentY);
+            doc.text('Cinema el Foráneo', marginLeft, currentY);
             
-            currentY += 15;
-            doc.setFontSize(18);
+            currentY += 8;
+            doc.setFontSize(12);
             doc.setTextColor(60, 60, 60);
             doc.text('BOLETO DE ENTRADA', marginLeft, currentY);
 
             // Línea separadora
-            currentY += 10;
-            doc.setLineWidth(1);
+            currentY += 5;
+            doc.setLineWidth(0.3);
             doc.setDrawColor(100, 100, 100);
             doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
 
-            // Información de la compra
-            currentY += 20;
-            doc.setFontSize(12);
+            // Información de la compra (súper compacto)
+            currentY += 8;
+            doc.setFontSize(8);
             doc.setTextColor(80, 80, 80);
             
             if (result && result.sale_id) {
-                doc.text(`ID de Venta: ${result.sale_id}`, marginLeft, currentY);
-                currentY += 8;
+                doc.text(`ID Venta: ${result.sale_id}`, marginLeft, currentY);
+                currentY += 4;
             }
             
             const now = new Date();
-            doc.text(`Fecha de Compra: ${now.toLocaleDateString('es-ES')} ${now.toLocaleTimeString('es-ES')}`, marginLeft, currentY);
-            currentY += 15;
+            doc.text(`Compra: ${now.toLocaleDateString('es-ES')} ${now.toLocaleTimeString('es-ES')}`, marginLeft, currentY);
+            currentY += 6;
 
             // Información de la película y función
-            doc.setFontSize(14);
-            doc.setTextColor(40, 40, 40);
-            doc.text('DETALLES DE LA FUNCIÓN', marginLeft, currentY);
-            currentY += 12;
-
             doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text('FUNCIÓN', marginLeft, currentY);
+            currentY += 8;
+
+            doc.setFontSize(9);
             doc.setTextColor(60, 60, 60);
             
             // Película
             if (this.selectedMovie) {
                 doc.text(`Película: ${this.selectedMovie.mov_title}`, marginLeft, currentY);
-                currentY += 8;
+                currentY += 5;
                 doc.text(`Género: ${this.selectedMovie.mov_genre || 'N/A'}`, marginLeft, currentY);
-                currentY += 8;
-                doc.text(`Duración: ${this.selectedMovie.mov_duration || 'N/A'} min`, marginLeft, currentY);
-                currentY += 8;
-                doc.text(`Clasificación: ${this.selectedMovie.mov_classification || 'N/A'}`, marginLeft, currentY);
-                currentY += 10;
+                currentY += 5;
+                doc.text(`Duración: ${this.selectedMovie.mov_duration || 'N/A'} min | ${this.selectedMovie.mov_classification || 'N/A'}`, marginLeft, currentY);
+                currentY += 7;
             }
 
             // Función y sala
             if (this.selectedScreening) {
                 const screeningDate = new Date(`${this.selectedScreening.scr_date}T${this.selectedScreening.scr_time}`);
                 const fechaStr = screeningDate.toLocaleDateString('es-ES', {
-                    weekday: 'long',
                     day: 'numeric',
-                    month: 'long',
+                    month: 'short',
                     year: 'numeric'
                 });
                 const horaStr = screeningDate.toLocaleTimeString('es-ES', {
@@ -633,114 +630,108 @@ class Booking {
                     minute: '2-digit'
                 });
 
-                doc.text(`Fecha de Función: ${fechaStr}`, marginLeft, currentY);
-                currentY += 8;
-                doc.text(`Hora: ${horaStr}`, marginLeft, currentY);
-                currentY += 8;
+                doc.text(`Fecha: ${fechaStr} | Hora: ${horaStr}`, marginLeft, currentY);
+                currentY += 5;
                 doc.text(`Sala: ${this.getAuditoriumName(this.selectedScreening.scr_aud_id)}`, marginLeft, currentY);
-                currentY += 15;
+                currentY += 8;
             }
 
             // Información del cliente
-            doc.setFontSize(14);
-            doc.setTextColor(40, 40, 40);
-            doc.text('DATOS DEL CLIENTE', marginLeft, currentY);
-            currentY += 12;
-
             doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text('CLIENTE', marginLeft, currentY);
+            currentY += 8;
+
+            doc.setFontSize(9);
             doc.setTextColor(60, 60, 60);
-            doc.text(`Nombre: ${purchaseData.customer_name}`, marginLeft, currentY);
-            currentY += 8;
-            doc.text(`Email: ${purchaseData.customer_email}`, marginLeft, currentY);
-            currentY += 8;
+            doc.text(`${purchaseData.customer_name}`, marginLeft, currentY);
+            currentY += 5;
+            doc.text(`${purchaseData.customer_email}`, marginLeft, currentY);
+            currentY += 5;
             if (purchaseData.customer_phone) {
-                doc.text(`Teléfono: ${purchaseData.customer_phone}`, marginLeft, currentY);
-                currentY += 8;
+                doc.text(`Tel: ${purchaseData.customer_phone}`, marginLeft, currentY);
+                currentY += 5;
             }
-            currentY += 7;
+            currentY += 3;
 
             // Información de los boletos
-            doc.setFontSize(14);
-            doc.setTextColor(40, 40, 40);
-            doc.text('BOLETOS ADQUIRIDOS', marginLeft, currentY);
-            currentY += 12;
-
             doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text('BOLETOS', marginLeft, currentY);
+            currentY += 8;
+
+            doc.setFontSize(9);
             doc.setTextColor(60, 60, 60);
             
             const seats = this.selectedSeats.map(seat => seat.id).join(', ');
             doc.text(`Asientos: ${seats}`, marginLeft, currentY);
-            currentY += 8;
+            currentY += 5;
             doc.text(`Cantidad: ${this.selectedSeats.length} boleto(s)`, marginLeft, currentY);
-            currentY += 8;
+            currentY += 5;
 
             if (result && result.ticket_ids && result.ticket_ids.length > 0) {
                 const ticketIds = result.ticket_ids.length > 3 
                     ? result.ticket_ids.slice(0, 3).join(', ') + '...'
                     : result.ticket_ids.join(', ');
-                doc.text(`IDs de Tickets: ${ticketIds}`, marginLeft, currentY);
-                currentY += 10;
+                doc.text(`IDs: ${ticketIds}`, marginLeft, currentY);
+                currentY += 7;
             }
 
             // Resumen de pago
-            doc.setFontSize(14);
-            doc.setTextColor(40, 40, 40);
-            doc.text('RESUMEN DE PAGO', marginLeft, currentY);
-            currentY += 12;
-
             doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text('PAGO', marginLeft, currentY);
+            currentY += 8;
+
+            doc.setFontSize(9);
             doc.setTextColor(60, 60, 60);
             
             const unitPrice = this.selectedScreening?.scr_price || 12.5;
-            doc.text(`Precio unitario: $${unitPrice.toFixed(2)} MXN`, marginLeft, currentY);
-            currentY += 8;
-            doc.text(`Método de pago: ${purchaseData.payment_method.toUpperCase()}`, marginLeft, currentY);
-            currentY += 8;
+            doc.text(`Precio: $${unitPrice.toFixed(2)} x ${this.selectedSeats.length} | ${purchaseData.payment_method.toUpperCase()}`, marginLeft, currentY);
+            currentY += 6;
 
             // Total con destacado
-            doc.setFontSize(16);
+            doc.setFontSize(14);
             doc.setTextColor(40, 40, 40);
-            doc.text(`Total Pagado: $${purchaseData.total_amount.toFixed(2)} MXN`, marginLeft, currentY);
-            currentY += 20;
-
-            // Línea separadora
-            doc.setLineWidth(1);
-            doc.setDrawColor(100, 100, 100);
-            doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
-            currentY += 15;
-
-            // Instrucciones
-            doc.setFontSize(12);
-            doc.setTextColor(80, 80, 80);
-            doc.text('INSTRUCCIONES IMPORTANTES:', marginLeft, currentY);
+            doc.text(`TOTAL: $${purchaseData.total_amount.toFixed(2)} MXN`, marginLeft, currentY);
             currentY += 10;
 
+            // Línea separadora
+            doc.setLineWidth(0.3);
+            doc.setDrawColor(100, 100, 100);
+            doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
+            currentY += 8;
+
+            // Instrucciones compactas
             doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.text('INSTRUCCIONES:', marginLeft, currentY);
+            currentY += 6;
+
+            doc.setFontSize(8);
             doc.setTextColor(100, 100, 100);
             const instructions = [
-                '• Presente este boleto al ingresar a la sala',
-                '• Llegue 15 minutos antes del inicio de la función',
-                '• No se admiten devoluciones ni cambios',
-                '• Prohibido el ingreso de alimentos y bebidas externas',
-                '• Mantenga el boleto durante toda la función'
+                '• Presente boleto al ingresar • Llegue 15 min antes',
+                '• Sin devoluciones ni cambios • Sin alimentos externos',
+                '• Conserve el boleto durante la función'
             ];
 
             instructions.forEach(instruction => {
                 doc.text(instruction, marginLeft, currentY);
-                currentY += 6;
+                currentY += 4;
             });
 
-            // Footer
-            currentY = pageHeight - 40;
-            doc.setFontSize(14);
+            // Footer compacto
+            currentY = pageHeight - 20;
+            doc.setFontSize(12);
             doc.setTextColor(40, 40, 40);
             doc.text('¡DISFRUTE SU FUNCIÓN! 🍿🎬', marginLeft, currentY);
             
-            currentY += 10;
-            doc.setFontSize(8);
+            currentY += 6;
+            doc.setFontSize(7);
             doc.setTextColor(120, 120, 120);
-            doc.text(`Generado el: ${now.toLocaleDateString('es-ES')} ${now.toLocaleTimeString('es-ES')}`, marginLeft, currentY);
-            doc.text('Sistema Cinema el Foráneo v1.0', pageWidth - marginRight - 40, currentY);
+            doc.text(`${now.toLocaleDateString('es-ES')} ${now.toLocaleTimeString('es-ES')}`, marginLeft, currentY);
+            doc.text('Cinema el Foráneo', pageWidth - marginRight - 25, currentY);
 
             // Guardar el PDF
             const fileName = `boleto_${result?.sale_id || 'compra'}_${now.getTime()}.pdf`;
