@@ -250,8 +250,6 @@ class Movies {
         const form = document.getElementById('movie-form');
         if (form) {
             form.reset();
-            // Establecer valores por defecto
-            document.getElementById('movie-status').value = 'active';
         }
     }
 
@@ -260,7 +258,6 @@ class Movies {
         document.getElementById('movie-duration').value = movie.mov_duration || '';
         document.getElementById('movie-classification').value = movie.mov_classification || '';
         document.getElementById('movie-genre').value = movie.mov_genre || '';
-        document.getElementById('movie-status').value = movie.mov_status || 'active';
     }
 
     async handleMovieSubmit(event) {
@@ -274,9 +271,17 @@ class Movies {
                 mov_title: document.getElementById('movie-title').value,
                 mov_duration: parseInt(document.getElementById('movie-duration').value),
                 mov_classification: document.getElementById('movie-classification').value,
-                mov_genre: document.getElementById('movie-genre').value,
-                mov_status: document.getElementById('movie-status').value
+                mov_genre: document.getElementById('movie-genre').value
             };
+
+            // Para nuevas películas, siempre usar 'active'. Para ediciones, mantener el estado actual
+            if (this.currentMovie) {
+                // Al editar, mantener el estado actual de la película
+                movieData.mov_status = this.currentMovie.mov_status;
+            } else {
+                // Al crear, siempre establecer como activo
+                movieData.mov_status = 'active';
+            }
 
             // Validar que los campos requeridos estén llenos
             if (!movieData.mov_title || !movieData.mov_duration || !movieData.mov_classification || !movieData.mov_genre) {
