@@ -1,96 +1,68 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Query, Path
 from typing import List, Optional
-from datetime import datetime, date
-from models.screening import Screening, ScreeningCreate, ScreeningUpdate
-from services.screening_service import ScreeningService
+from datetime import date
+from models.screening import ScreeningCreate, ScreeningUpdate, ScreeningResponse, ScreeningSummary
+from services.screening_service import screening_service
 
+# Crear router
 router = APIRouter(tags=["screenings"])
-screening_service = ScreeningService()
 
-@router.post("/", response_model=Screening)
-def create_screening(screening: ScreeningCreate):
-    """Create a new screening"""
-    try:
-        return screening_service.create_screening(screening)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# GET /api/screenings/ - Listar proyecciones
+@router.get("/", response_model=dict)
+async def get_screenings(
+    skip: int = Query(0, ge=0, description="Elementos a saltar"),
+    limit: int = Query(10, ge=1, le=100, description="Límite de elementos")
+):
+    """
+    Obtener lista de proyecciones con paginación
+    
+    - **skip**: número de elementos a omitir (para paginación)
+    - **limit**: número máximo de elementos a devolver (1-100)
+    """
+    return await screening_service.get_screenings(skip=skip, limit=limit)
 
-@router.get("/", response_model=List[Screening])
-def get_all_screenings():
-    """Get all screenings"""
-    try:
-        return screening_service.get_all_screenings()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# GET /api/screenings/search - Buscar proyecciones
+@router.get("/search", response_model=List[ScreeningSummary])
+async def search_screenings(
+    movie_id: Optional[str] = Query(None, description="Buscar por película"),
+    auditorium_id: Optional[str] = Query(None, description="Buscar por auditorio"),
+    screening_date: Optional[date] = Query(None, description="Buscar por fecha"),
+    status: Optional[str] = Query(None, description="Buscar por estado")
+):
+    """
+    Buscar proyecciones por diferentes criterios
+    """
+    return await screening_service.search_screenings(movie_id=movie_id, auditorium_id=auditorium_id, 
+                                                    screening_date=screening_date, status=status)
 
-@router.get("/{screening_id}", response_model=Screening)
-def get_screening(screening_id: int):
-    """Get a specific screening by ID"""
-    try:
-        screening = screening_service.get_screening_by_id(screening_id)
-        if not screening:
-            raise HTTPException(status_code=404, detail="Screening not found")
-        return screening
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# GET /api/screenings/{screening_id} - Obtener proyección específica
+@router.get("/{screening_id}", response_model=ScreeningResponse)
+async def get_screening(screening_id: str):
+    """
+    Obtener una proyección por su ID
+    """
+    return await screening_service.get_screening_by_id(screening_id)
 
-@router.put("/{screening_id}", response_model=Screening)
-def update_screening(screening_id: int, screening_update: ScreeningUpdate):
-    """Update a screening"""
-    try:
-        updated_screening = screening_service.update_screening(screening_id, screening_update)
-        if not updated_screening:
-            raise HTTPException(status_code=404, detail="Screening not found")
-        return updated_screening
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# POST /api/screenings/ - Crear nueva proyección
+@router.post("/", response_model=ScreeningResponse, status_code=201)
+async def create_screening(screening: ScreeningCreate):
+    """
+    Crear una nueva proyección
+    """
+    return await screening_service.create_screening(screening)
 
+# PUT /api/screenings/{screening_id} - Actualizar proyección
+@router.put("/{screening_id}", response_model=ScreeningResponse)
+async def update_screening(screening_id: str, screening_update: ScreeningUpdate):
+    """
+    Actualizar una proyección existente
+    """
+    return await screening_service.update_screening(screening_id, screening_update)
+
+# DELETE /api/screenings/{screening_id} - Eliminar proyección (soft delete)
 @router.delete("/{screening_id}")
-def delete_screening(screening_id: int):
-    """Delete a screening"""
-    try:
-        success = screening_service.delete_screening(screening_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Screening not found")
-        return {"message": "Screening deleted successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/movie/{movie_id}", response_model=List[Screening])
-def get_screenings_by_movie(movie_id: int):
-    """Get all screenings for a specific movie"""
-    try:
-        return screening_service.get_screenings_by_movie(movie_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/auditorium/{auditorium_id}", response_model=List[Screening])
-def get_screenings_by_auditorium(auditorium_id: int):
-    """Get all screenings for a specific auditorium"""
-    try:
-        return screening_service.get_screenings_by_auditorium(auditorium_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/date/{screening_date}", response_model=List[Screening])
-def get_screenings_by_date(screening_date: date):
-    """Get all screenings for a specific date"""
-    try:
-        return screening_service.get_screenings_by_date(screening_date)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/available/{screening_id}")
-def get_available_seats(screening_id: int):
-    """Get available seats for a screening"""
-    try:
-        available_seats = screening_service.get_available_seats(screening_id)
-        return {"screening_id": screening_id, "available_seats": available_seats}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def delete_screening(screening_id: str):
+    """
+    Eliminar una proyección (cambiar estado a cancelled)
+    """
+    return await screening_service.delete_screening(screening_id)

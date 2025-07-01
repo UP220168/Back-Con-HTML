@@ -12,7 +12,7 @@ class MovieService:
     def __init__(self):
         self.repository = movie_repository
     
-    def get_movies(self, skip: int = 0, limit: int = 100) -> Dict[str, Any]:
+    async def get_movies(self, skip: int = 0, limit: int = 100) -> Dict[str, Any]:
         """Obtener lista de películas con paginación"""
         try:
             # Validar parámetros
@@ -22,8 +22,8 @@ class MovieService:
                 raise HTTPException(status_code=400, detail="Limit debe estar entre 1 y 100")
             
             # Obtener películas y total
-            movies = self.repository.get_all(skip, limit)
-            total = self.repository.count_total()
+            movies = await self.repository.get_all(skip, limit)
+            total = await self.repository.count_total()
             
             # Convertir a modelos Pydantic
             movie_list = [self._dict_to_movie_summary(movie) for movie in movies]
@@ -42,14 +42,14 @@ class MovieService:
             logger.error(f"Error in get_movies: {str(e)}")
             raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-    def get_movie_by_id(self, movie_id: str) -> MovieResponse:
+    async def get_movie_by_id(self, movie_id: str) -> MovieResponse:
         """Obtener película por ID"""
         try:
             # Validar formato UUID (básico)
             if not movie_id or len(movie_id) < 30:
                 raise HTTPException(status_code=400, detail="ID de película inválido")
             
-            movie = self.repository.get_by_id(movie_id)
+            movie = await self.repository.get_by_id(movie_id)
             if not movie:
                 raise HTTPException(status_code=404, detail="Película no encontrada")
             
@@ -61,14 +61,14 @@ class MovieService:
             logger.error(f"Error in get_movie_by_id: {str(e)}")
             raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-    def create_movie(self, movie_data: MovieCreate) -> MovieResponse:
+    async def create_movie(self, movie_data: MovieCreate) -> MovieResponse:
         """Crear nueva película"""
         try:
             # Validaciones de negocio adicionales
-            self._validate_movie_data(movie_data.dict())
+            await self._validate_movie_data(movie_data.dict())
             
             # Crear película
-            created_movie = self.repository.create(movie_data.dict())
+            created_movie = await self.repository.create(movie_data.dict())
             
             if not created_movie:
                 raise HTTPException(status_code=500, detail="Error creando película")
@@ -81,7 +81,7 @@ class MovieService:
             logger.error(f"Error in create_movie: {str(e)}")
             raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-    def update_movie(self, movie_id: str, movie_data: MovieUpdate) -> MovieResponse:
+    async def update_movie(self, movie_id: str, movie_data: MovieUpdate) -> MovieResponse:
         """Actualizar película existente"""
         try:
             # Validar ID
@@ -95,10 +95,10 @@ class MovieService:
                 raise HTTPException(status_code=400, detail="No hay datos para actualizar")
             
             # Validaciones de negocio
-            self._validate_movie_data(update_data, is_update=True)
+            await self._validate_movie_data(update_data, is_update=True)
             
             # Actualizar
-            updated_movie = self.repository.update(movie_id, update_data)
+            updated_movie = await self.repository.update(movie_id, update_data)
             
             if not updated_movie:
                 raise HTTPException(status_code=404, detail="Película no encontrada")
@@ -111,13 +111,13 @@ class MovieService:
             logger.error(f"Error in update_movie: {str(e)}")
             raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-    def delete_movie(self, movie_id: str) -> Dict[str, str]:
+    async def delete_movie(self, movie_id: str) -> Dict[str, str]:
         """Eliminar película (soft delete)"""
         try:
             if not movie_id:
                 raise HTTPException(status_code=400, detail="ID de película requerido")
             
-            success = self.repository.delete(movie_id)
+            success = await self.repository.delete(movie_id)
             
             if not success:
                 raise HTTPException(status_code=404, detail="Película no encontrada")
@@ -130,13 +130,13 @@ class MovieService:
             logger.error(f"Error in delete_movie: {str(e)}")
             raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-    def search_movies(self, title: str = None, genre: str = None, classification: str = None) -> List[MovieSummary]:
+    async def search_movies(self, title: str = None, genre: str = None, classification: str = None) -> List[MovieSummary]:
         """Buscar películas por criterios"""
         try:
             if not any([title, genre, classification]):
                 raise HTTPException(status_code=400, detail="Debe proporcionar al menos un criterio de búsqueda")
             
-            movies = self.repository.search(title, genre, classification)
+            movies = await self.repository.search(title, genre, classification)
             
             return [self._dict_to_movie_summary(movie) for movie in movies]
         
@@ -147,7 +147,7 @@ class MovieService:
             raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     # Métodos auxiliares privados
-    def _validate_movie_data(self, data: Dict[str, Any], is_update: bool = False):
+    async def _validate_movie_data(self, data: Dict[str, Any], is_update: bool = False):
         """Validaciones de negocio adicionales"""
         # Validar duración
         if 'mov_duration' in data:

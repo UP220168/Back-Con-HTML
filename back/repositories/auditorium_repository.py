@@ -113,7 +113,7 @@ class AuditoriumRepository:
                 return False
             
             # Verificar que no tenga proyecciones asociadas
-            check_query = "SELECT COUNT(*) as count FROM tb_screening WHERE scr_auditorium_id = %s"
+            check_query = "SELECT COUNT(*) as count FROM tb_screening WHERE scr_aud_id = %s"
             screenings = self.db.execute_safe(check_query, (auditorium_id,))
             
             if screenings and screenings[0]['count'] > 0:

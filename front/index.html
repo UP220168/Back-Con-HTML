@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema Dashboard</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components/header.css">
+    <link rel="stylesheet" href="css/components/sidebar.css">
+    <link rel="stylesheet" href="css/components/dashboard.css">
+    <link rel="stylesheet" href="css/components/booking.css">
+    <link rel="stylesheet" href="css/components/management.css">
+    <link rel="stylesheet" href="css/components/modal.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <h1>🎬 Cinema el Foraneo</h1>
+            </div>
+            <div class="user-info">
+                <span id="user-name">Usuario</span>
+                <button id="logout-btn" class="btn-logout">Cerrar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li><a href="#dashboard" class="sidebar-link active" data-page="dashboard">
+                    <span class="icon">📊</span>
+                    Dashboard
+                </a></li>
+                <li><a href="#booking" class="sidebar-link" data-page="booking">
+                    <span class="icon">🎪</span>
+                    Compra de Boletos
+                </a></li>
+                <li><a href="#movies" class="sidebar-link" data-page="movies">
+                    <span class="icon">🎬</span>
+                    Películas
+                </a></li>
+                <li><a href="#screenings" class="sidebar-link" data-page="screenings">
+                    <span class="icon">🎭</span>
+                    Funciones
+                </a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="page active">
+            <div class="page-header">
+                <h2>Dashboard General</h2>
+                <p>Resumen de la actividad del cinema</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Total de Ventas</h3>
+                        <span class="card-icon">💰</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="metric">
+                            <span class="metric-value" id="total-sales">$0.00</span>
+                            <span class="metric-label">Ventas Totales</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value" id="total-transactions">0</span>
+                            <span class="metric-label">Transacciones</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Clientes</h3>
+                        <span class="card-icon">👥</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="metric">
+                            <span class="metric-value" id="total-customers">0</span>
+                            <span class="metric-label">Clientes Atendidos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Boletos</h3>
+                        <span class="card-icon">�</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="metric">
+                            <span class="metric-value" id="total-tickets">0</span>
+                            <span class="metric-label">Total Vendidos</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value" id="movies-available">0</span>
+                            <span class="metric-label">Películas Disponibles</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Page -->
+        <div id="booking-page" class="page">
+            <div class="page-header">
+                <h2>Comprar Boletos</h2>
+                <p>Selecciona una función y tus asientos preferidos</p>
+            </div>
+            
+            <div class="booking-container">
+                <!-- Paso 1: Selección de Película y Función -->
+                <div class="booking-step" id="movie-selection">
+                    <h3>Paso 1: Selecciona una función</h3>
+                    <div class="movies-grid" id="movies-grid">
+                        <!-- Movies will be loaded here -->
+                    </div>
+                    <div class="screenings-list" id="screenings-list" style="display: none;">
+                        <h4>Funciones disponibles:</h4>
+                        <div class="screenings-grid" id="screenings-grid">
+                            <!-- Screenings will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 2: Selección de Asientos -->
+                <div class="booking-step" id="seat-selection" style="display: none;">
+                    <h3>Paso 2: Selecciona tus asientos</h3>
+                    <div class="cinema-layout">
+                        <div class="screen">PANTALLA</div>
+                        <div class="seats-container" id="seats-container">
+                            <!-- Seats will be generated here -->
+                        </div>
+                        <div class="seats-legend">
+                            <div class="legend-item">
+                                <span class="seat available"></span>
+                                <span>Disponible</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="seat selected"></span>
+                                <span>Seleccionado</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="seat occupied"></span>
+                                <span>Ocupado</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 3: Resumen y Compra -->
+                <div class="booking-step" id="purchase-summary" style="display: none;">
+                    <h3>Paso 3: Confirmar compra</h3>
+                    <div class="summary-container">
+                        <div class="booking-summary" id="booking-summary">
+                            <!-- Summary will be displayed here -->
+                        </div>
+                        <div class="payment-form">
+                            <h4>Datos del comprador</h4>
+                            <form id="purchase-form">
+                                <div class="form-group">
+                                    <label for="customer-email">Email:</label>
+                                    <input type="email" id="customer-email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customer-name">Nombre:</label>
+                                    <input type="text" id="customer-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customer-phone">Teléfono:</label>
+                                    <input type="tel" id="customer-phone">
+                                </div>
+                                <div class="purchase-buttons">
+                                    <button type="button" class="btn-secondary" id="back-to-seats">Cambiar Asientos</button>
+                                    <button type="submit" class="btn-primary" id="confirm-purchase">Confirmar Compra</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="booking-navigation">
+                    <button class="btn-secondary" id="prev-step" style="display: none;">Anterior</button>
+                    <button class="btn-primary" id="next-step" style="display: none;">Siguiente</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movies Management Page -->
+        <div id="movies-page" class="page">
+            <div class="page-header">
+                <h2>Gestión de Películas</h2>
+                <p>Administrar catálogo de películas</p>
+                <button class="btn-primary" id="add-movie-btn">Agregar Película</button>
+            </div>
+            
+            <div class="management-container">
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <input type="text" id="movie-search" placeholder="Buscar película...">
+                        <select id="genre-filter">
+                            <option value="">Todos los géneros</option>
+                            <option value="Acción">Acción</option>
+                            <option value="Comedia">Comedia</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Ciencia Ficción">Ciencia Ficción</option>
+                            <option value="Terror">Terror</option>
+                        </select>
+                        <select id="status-filter">
+                            <option value="">Todos los estados</option>
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                        </select>
+                        <button class="btn-secondary" id="clear-filters">Limpiar</button>
+                    </div>
+                </div>
+
+                <!-- Lista de películas -->
+                <div class="movies-grid" id="movies-list">
+                    <!-- Movies will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Screenings Management Page -->
+        <div id="screenings-page" class="page">
+            <div class="page-header">
+                <h2>Gestión de Funciones</h2>
+                <p>Programar funciones en salas</p>
+                <button class="btn-primary" id="add-screening-btn">Programar Función</button>
+            </div>
+            
+            <div class="management-container">
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <select id="movie-filter">
+                            <option value="">Todas las películas</option>
+                        </select>
+                        <select id="auditorium-filter">
+                            <option value="">Todas las salas</option>
+                        </select>
+                        <input type="date" id="date-filter">
+                        <button class="btn-secondary" id="clear-screening-filters">Limpiar</button>
+                    </div>
+                </div>
+
+                <!-- Lista de funciones -->
+                <div class="screenings-table-container">
+                    <table class="data-table" id="screenings-table">
+                        <thead>
+                            <tr>
+                                <th>Película</th>
+                                <th>Sala</th>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Precio</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="screenings-list">
+                            <!-- Screenings will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auth Page -->
+        <div id="auth-page" class="page">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <h2 id="auth-title">Iniciar Sesión</h2>
+                    <form id="auth-form">
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Contraseña:</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        <div class="form-group" id="name-group" style="display: none;">
+                            <label for="name">Nombre completo:</label>
+                            <input type="text" id="name">
+                        </div>
+                        <div class="form-group" id="phone-group" style="display: none;">
+                            <label for="phone">Teléfono:</label>
+                            <input type="tel" id="phone">
+                        </div>
+                        <button type="submit" class="btn-primary" id="auth-submit">Iniciar Sesión</button>
+                    </form>
+                    <p class="auth-switch">
+                        <span id="auth-switch-text">¿No tienes cuenta?</span>
+                        <a href="#" id="auth-switch-link">Registrarse</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Movie Modal -->
+    <div id="movie-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeMovieModal()">&times;</span>
+            <div class="modal-body">
+                <h3 id="movie-modal-title">Agregar Película</h3>
+                <form id="movie-form">
+                    <div class="form-group">
+                        <label for="movie-title">Título:</label>
+                        <input type="text" id="movie-title" name="mov_title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movie-duration">Duración (minutos):</label>
+                        <input type="number" id="movie-duration" name="mov_duration" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="movie-classification">Clasificación:</label>
+                        <select id="movie-classification" name="mov_classification" required>
+                            <option value="">Seleccionar</option>
+                            <option value="G">G - General</option>
+                            <option value="PG">PG - Parental Guidance</option>
+                            <option value="PG-13">PG-13 - Parents Strongly Cautioned</option>
+                            <option value="R">R - Restricted</option>
+                            <option value="NC-17">NC-17 - Adults Only</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="movie-genre">Género:</label>
+                        <select id="movie-genre" name="mov_genre" required>
+                            <option value="">Seleccionar</option>
+                            <option value="Acción">Acción</option>
+                            <option value="Comedia">Comedia</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Ciencia Ficción">Ciencia Ficción</option>
+                            <option value="Terror">Terror</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Aventura">Aventura</option>
+                            <option value="Animación">Animación</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="movie-status">Estado:</label>
+                        <select id="movie-status" name="mov_status">
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeMovieModal()">Cancelar</button>
+                        <button type="submit" class="btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screening Modal -->
+    <div id="screening-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeScreeningModal()">&times;</span>
+            <div class="modal-body">
+                <h3 id="screening-modal-title">Programar Función</h3>
+                <form id="screening-form">
+                    <div class="form-group">
+                        <label for="screening-movie">Película:</label>
+                        <select id="screening-movie" name="scr_mov_id" required>
+                            <option value="">Seleccionar película</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="screening-auditorium">Sala:</label>
+                        <select id="screening-auditorium" name="scr_aud_id" required>
+                            <option value="">Seleccionar sala</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="screening-date">Fecha:</label>
+                        <input type="date" id="screening-date" name="scr_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="screening-time">Hora:</label>
+                        <input type="time" id="screening-time" name="scr_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="screening-price">Precio del boleto:</label>
+                        <input type="number" id="screening-price" name="scr_ticket_price" required min="0" step="0.01">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeScreeningModal()">Cancelar</button>
+                        <button type="submit" class="btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils/api.js"></script>
+    <script src="js/utils/storage.js"></script>
+    <script src="js/components/navigation.js"></script>
+    <script src="js/components/dashboard.js"></script>
+    <script src="js/components/booking.js"></script>
+    <script src="js/components/movies.js"></script>
+    <script src="js/components/screenings.js"></script>
+    <script src="js/components/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
