@@ -170,15 +170,22 @@ class Booking {
             screeningsGrid.innerHTML = '';
 
             if (Array.isArray(screenings) && screenings.length > 0) {
+                // Validación adicional: solo funciones de la película seleccionada
+                const movieScreenings = screenings.filter(screening => 
+                    screening.scr_mov_id === movieId
+                );
+                
+                console.log(`🔍 Validación: ${screenings.length} funciones recibidas, ${movieScreenings.length} corresponden a la película`);
+                
                 // Filtrar funciones válidas (futuras y programadas)
-                const validScreenings = screenings.filter(screening => {
+                const validScreenings = movieScreenings.filter(screening => {
                     const screeningDate = new Date(`${screening.scr_date}T${screening.scr_time}`);
                     const now = new Date();
                     return screeningDate > now && screening.scr_status === 'scheduled';
                 });
                 
                 if (validScreenings.length > 0) {
-                    console.log(`✅ ${validScreenings.length} funciones válidas encontradas`);
+                    console.log(`✅ ${validScreenings.length} funciones válidas encontradas para ${this.selectedMovie.mov_title}`);
                     
                     validScreenings.forEach(screening => {
                         const screeningCard = this.createScreeningCard(screening);
@@ -241,7 +248,10 @@ class Booking {
         }
 
         this.selectedScreening = screening;
-        log('Screening selected:', 'info', screening);
+        console.log('✅ Función seleccionada:', screening);
+        
+        // Actualizar navegación para mostrar el botón siguiente
+        this.updateNavigation();
     }
 
     async nextStep() {
