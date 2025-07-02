@@ -108,6 +108,15 @@ const ReportsAPI = {
         return api.get(CONFIG.ENDPOINTS.TICKETS_BY_AUDITORIUM);
     },
 
+    async getMostSoldMovies() {
+        return api.get(CONFIG.ENDPOINTS.MOVIES_MOST_SOLD);
+    },
+
+    async getLeastSoldMovies() {
+        return api.get(CONFIG.ENDPOINTS.MOVIES_LEAST_SOLD);
+    },
+
+    // Métodos individuales para compatibilidad
     async getMostSoldMovie() {
         return api.get(CONFIG.ENDPOINTS.MOVIES_MOST_SOLD);
     },
